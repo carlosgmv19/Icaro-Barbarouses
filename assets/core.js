@@ -92,6 +92,8 @@ function setData(d) {
     g.played = g.estado === 'Jugado' || (g.pf != null && g.pc != null && g.estado !== 'Programado');
     if (g.played && g.pf == null) g.played = false;
     g.res = g.played ? (g.pf > g.pc ? 'V' : 'D') : null;
+    // 20–0 o 0–20: un equipo no se presentó (no cuenta para los récords de equipo)
+    g.forfeit = g.played && ((g.pf === 20 && g.pc === 0) || (g.pf === 0 && g.pc === 20));
     g.po = g.fase === 'Playoffs';
     g.label = g.po ? 'PO' + (g.j || '') : 'J' + (g.j || '');
     return g;

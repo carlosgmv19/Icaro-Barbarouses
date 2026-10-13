@@ -127,16 +127,16 @@ PAGES.records = R => {
     body = `<div class="tw"><table class="t"><tr><th>#</th><th class="l">Jugador</th>${CL.map(([k, l]) => `<th class="${cs === k ? 'sorted' : ''}"><button ${on('rc.sort', k)}>${l}${cs === k ? ' ↓' : ''}</button></th>`).join('')}</tr>
       ${rows.map((r, i) => { const act = (S.M.players[r.p] || {}).activo; return `<tr style="${act ? '' : 'opacity:.6'}"><td class="mut">${i + 1}</td><td class="l">${plink(r.p)}${act ? '' : ' <span class="small mut">· ya no está</span>'}</td>${CL.map(([k]) => `<td class="${v(r, k) === best[k] ? 'best' : ''}" style="${cs === k ? 'font-weight:700' : ''}">${nf(v(r, k))}</td>`).join('')}</tr>`; }).join('')}</table></div><div class="note" style="margin-top:10px">Totales acumulados de todas las temporadas registradas, liga y playoffs.</div>`;
   } else {
-    const G = S.M.games.filter(g => g.played);
+    const G = S.M.games.filter(g => g.played && !g.forfeit);
     const by = (f, d) => G.slice().sort((a, b) => d * (f(b) - f(a)))[0];
     const mPF = by(g => g.pf, 1), mW = G.filter(g => g.res === 'V').sort((a, b) => (b.pf - b.pc) - (a.pf - a.pc))[0], mPC = by(g => g.pc, -1);
     let bq = null; G.forEach(g => g.q.forEach((x, i) => { if (isNum(x.f) && (!bq || x.f > bq.v)) bq = { v: x.f, c: x.c, i, g }; }));
-    const str = bestStreak(G);
+    const str = bestStreak(S.M.games.filter(g => g.played));
     const wins = S.M.playedSeasons.map(s => ({ s, r: teamRecord(s) })).sort((a, b) => b.r.V - a.r.V)[0];
     const T = [mPF && ['Más puntos anotados', mPF.pf, `${mPF.pf}–${mPF.pc} vs ${esc(mPF.rival)} · ${fdy(mPF.date)}`, mPF], mW && ['Victoria más amplia', sg(mW.pf - mW.pc), `${mW.pf}–${mW.pc} vs ${esc(mW.rival)} · ${fdy(mW.date)}`, mW],
       mPC && ['Menos puntos encajados', mPC.pc, `${mPC.pf}–${mPC.pc} vs ${esc(mPC.rival)} · ${fdy(mPC.date)}`, mPC], bq && ['Mejor cuarto', bq.v, `${bq.i + 1}º cuarto, ${bq.v}–${bq.c} vs ${esc(bq.g.rival)} · ${fdy(bq.g.date)}`, bq.g],
       ['Racha de victorias', str.n, str.n ? fd(str.from.date) + (str.n > 1 ? ' – ' + fdy(str.to.date) : '') : '—'], wins && ['Victorias en una liga', wins.r.V, `Temporada ${wins.s} (${wins.r.V}–${wins.r.D})`]].filter(Boolean);
-    body = `<div class="grid g3" style="gap:14px">${T.map(t => `${t[3] ? `<a href="#/partido/${encodeURIComponent(t[3].id)}" class="card sm" style="color:var(--tx)">` : '<div class="card sm">'}<div class="lbl">${t[0]}</div><div class="big acc">${t[1]}</div><div class="small tx2">${t[2]}</div>${t[3] ? '</a>' : '</div>'}`).join('')}</div>`;
+    body = `<div class="grid g3" style="gap:14px">${T.map(t => `${t[3] ? `<a href="#/partido/${encodeURIComponent(t[3].id)}" class="card sm" style="color:var(--tx)">` : '<div class="card sm">'}<div class="lbl">${t[0]}</div><div class="big acc">${t[1]}</div><div class="small tx2">${t[2]}</div>${t[3] ? '</a>' : '</div>'}`).join('')}</div><div class="note" style="margin-top:12px">En los récords de puntos no cuentan los partidos 20–0 por incomparecencia.</div>`;
   }
   const first = S.M.playedSeasons[S.M.playedSeasons.length - 1];
   return `<div class="pagehead"><div><h1>Récords del club</h1><div class="sub">Desde la ${esc(first || '')} · liga y playoffs · se actualizan solos con cada partido</div></div></div>
