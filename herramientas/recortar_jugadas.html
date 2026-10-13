@@ -154,6 +154,8 @@ document.body.appendChild(d)})})();
       <div class="stack" style="gap:8px;margin-bottom:12px">
         <label class="c"><input type="checkbox" id="oWeb"> Preparar para la web (720p y poco peso)</label>
         <label class="c"><input type="checkbox" id="oBoard"> Recortar del vídeo que ya tiene el marcador (<span id="boardName">partido_marcador.mp4</span>)</label>
+        <div class="mut" id="boardHint" style="font-size:13px;margin:-2px 0 2px 26px">Así el marcador sale en cada jugada. Antes hay que crear ese vídeo con el tracker (Incrustar marcador).</div>
+        <label class="c" style="flex-wrap:wrap;gap:6px">Carpeta del vídeo <input id="oDir" spellcheck="false" style="flex:1;min-width:240px;font:13px ui-monospace,Menlo,Consolas,monospace;padding:6px 8px;border-radius:6px;border:1px solid #3A404C;background:#0E1014;color:#F1F2F4"></label>
         <label class="c"><input type="checkbox" id="oOnly"> Solo las jugadas que salen con el filtro actual</label>
       </div>
       <div class="row">
@@ -178,7 +180,7 @@ document.body.appendChild(d)})})();
   var v = $('v');
   var DEF_PLAYERS = ['Carlos', 'Álvaro', 'Darío', 'Javi', 'Fran', 'Iggy', 'Nacho', 'Miguel', 'Manute', 'Dani'];
   var DEF_KWS = ['jugada', 'bandeja', 'triple', 'media distancia', 'and 1', 'asistencia', 'tapón', 'robo', 'rebote', 'bocina', 'fail'];
-  var P = { players: DEF_PLAYERS.slice(), kws: DEF_KWS.slice(), pre: 8, post: 2, web: true, board: false };   // preferencias (valen para todos los partidos)
+  var P = { players: DEF_PLAYERS.slice(), kws: DEF_KWS.slice(), pre: 8, post: 2, web: true, board: true };   // preferencias (valen para todos los partidos)
   var SEASON = '26/27', JORS = []; for (var j = 1; j <= 22; j++) JORS.push('J' + j); JORS = JORS.concat(['PO1', 'PO2', 'PO3', 'PO4']);
   var S = { season: '26/27', jor: '', clips: [], marks: [] };                                                                             // este vídeo: clips {a,b,who,desc,kw[]}
   var key = 'jugadas:sin-video', videoName = '', sel = -1, fKw = [], fWho = null, stopAt = null, queue = [], asking = false, wasPlaying = false;
@@ -186,6 +188,8 @@ document.body.appendChild(d)})})();
   function lsGet(k) { try { var r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch (e) { return null; } }
   function lsSet(k, o) { try { localStorage.setItem(k, JSON.stringify(o)); } catch (e) {} }
   function save() { lsSet(key, S); lsSet('jugadas:prefs2', P); }
+  // carpeta donde está el vídeo: la de esta herramienta, o la que se puso en el tracker, o la de por defecto
+  function vidDir() { if (P.dir) return P.dir; var t = lsGet('icaro_tracker_cfg'); return (t && t.dirVid) || 'C:\\Users\\carlo\\Desktop\\Basket_Icaro\\SEASON 26-27'; }
   function valid(o) { return o && Array.isArray(o.clips) && o.clips.every(function (c) { return typeof c.a === 'number' && typeof c.b === 'number'; }); }
   function norm(o) { return { season: SEASON, jor: o.jor || '', marks: Array.isArray(o.marks) ? o.marks : [], clips: o.clips.map(function (c) { return { a: c.a, b: c.b, desc: c.desc || '', kw: Array.isArray(c.kw) ? c.kw : [], who: Array.isArray(c.who) ? c.who : (c.who ? [c.who] : []) }; }) }; }
   function matchSlug() { if (!S.jor) return 'partido'; var m = /^J(\d+)$/.exec(S.jor); return S.season.replace('/', '') + '-' + (m ? 'J' + String(m[1]).padStart(2, '0') : S.jor); }
@@ -252,7 +256,7 @@ document.body.appendChild(d)})})();
   }
   function syncInputs() {
     $('players').value = P.players.join(', '); $('kws').value = P.kws.join(', ');
-    $('pre').value = P.pre; $('post').value = P.post; $('oWeb').checked = P.web !== false; $('oBoard').checked = !!P.board;
+    $('pre').value = P.pre; $('post').value = P.post; $('oWeb').checked = P.web !== false; $('oBoard').checked = !!P.board; $('oDir').value = vidDir();
   }
 
   // ----- jugadas -----
@@ -329,6 +333,7 @@ document.body.appendChild(d)})})();
   $('post').addEventListener('change', function () { P.post = Math.max(0, +this.value || 0); save(); });
   $('oWeb').addEventListener('change', function () { P.web = this.checked; save(); });
   $('oBoard').addEventListener('change', function () { P.board = this.checked; save(); });
+  $('oDir').addEventListener('change', function () { P.dir = this.value.trim().replace(/^"+|"+$/g, '').replace(/[\\/]+$/, ''); save(); });
 
   // ----- exportar -----
   function download(name, text, type) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
@@ -341,7 +346,7 @@ document.body.appendChild(d)})})();
     var cmds = cs.map(function (c) { return 'ffmpeg -y -loglevel error -ss ' + c.a.toFixed(1) + ' -i "' + src + '" -t ' + (c.b - c.a).toFixed(1) + ' ' + enc + ' "jugadas/' + fileName(c) + '"'; });
     var txt, file;
     if (kind === 'bat') { file = 'recortar_jugadas.bat';
-      txt = ['@echo off', 'chcp 65001 >nul', 'cd /d "%~dp0"', 'if not exist jugadas mkdir jugadas', 'echo Recortando ' + cs.length + ' jugadas...'].concat(cmds.map(function (x) { return x.replace(/%/g, '%%'); })).concat(['echo Listo: mira la carpeta jugadas.', 'pause']).join('\r\n') + '\r\n';
+      txt = ['@echo off', 'chcp 65001 >nul', 'cd /d "' + vidDir().replace(/%/g, '%%') + '"', 'if not exist "' + src.replace(/%/g, '%%') + '" (echo No encuentro el video ' + src.replace(/%/g, '%%') + ' en ' + vidDir().replace(/%/g, '%%') + (P.board ? '& echo Crea antes el video con marcador desde el tracker, o desmarca esa opcion.' : '') + '& pause & exit /b)', 'if not exist jugadas mkdir jugadas', 'echo Recortando ' + cs.length + ' jugadas...'].concat(cmds.map(function (x) { return x.replace(/%/g, '%%'); })).concat(['echo Listo: mira la carpeta jugadas.', 'pause']).join('\r\n') + '\r\n';
     } else { file = 'recortar_jugadas.sh';
       txt = ['#!/bin/sh', 'cd "$(dirname "$0")"', 'mkdir -p jugadas', 'echo "Recortando ' + cs.length + ' jugadas..."'].concat(cmds.map(function (x) { return x.replace(/\$/g, '\\$').replace(/`/g, '\\`'); })).concat(['echo "Listo: mira la carpeta jugadas."']).join('\n') + '\n'; }
     download(file, txt, 'text/plain;charset=utf-8'); toast('✓ ' + file + ' descargado (' + cs.length + ' jugadas)');
