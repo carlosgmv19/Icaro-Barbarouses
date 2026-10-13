@@ -180,7 +180,7 @@ function convForm(g, basic) {
   const cur = ui('as.est', null);
   return `<div class="${basic ? 'bcard' : 'card'} stack" style="gap:16px"><div><strong style="font-size:18px">¿Vienes? Responde aquí</strong>${UI['as.saved'] ? `<div class="small acc">${UI['as.saved']}</div>` : ''}</div>
     <div class="stack" style="gap:8px"><div class="lbl">1 · ¿Quién eres?</div><div class="chips">${roster.map(p => `<button type="button" class="chip ${who === p ? 'on' : ''}" onclick="pickWho(${esc(JSON.stringify(p))})">${esc(p)}</button>`).join('')}</div></div>
-    <div class="stack" style="gap:8px"><div class="lbl">2 · ¿Puedes venir?</div><div class="chips">${ESTADOS.map((l, i) => `<button type="button" class="chip ${cur === i ? 'on' : ''}" ${on('as.est', i)}>${l}</button>`).join('')}</div></div>
+    <div class="stack" style="gap:8px"><div class="lbl">2 · ¿Vas a ir?</div><div class="grid" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">${EST_GROUPS.filter(G => G.k != null).map(G => `<button type="button" ${on('as.est', G.k)} style="height:48px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;${cur === G.k ? G.chip + ';box-shadow:0 0 0 2px var(--tx)' : 'background:transparent;color:var(--tx2);border:1px solid var(--line2)'}">${ESTADOS[G.k]}</button>`).join('')}</div></div>
     ${basic ? '' : `<div class="stack" style="gap:8px"><div class="lbl">3 · Comentario (opcional)</div><input id="as-com" maxlength="200" value="${esc(who && by[who] ? by[who].com : '')}" placeholder="Llego tarde, voy directo…" style="background:var(--bg);border:1px solid var(--line2);border-radius:10px;color:var(--tx);padding:12px;font:inherit"></div>`}
     <button type="button" class="btn" id="as-send" style="align-self:flex-start" onclick="sendConv('${esc(g.id)}','${esc(g.season)}')">Enviar respuesta</button></div>`;
 }
@@ -188,9 +188,6 @@ PAGES.asistencia = () => {
   const g = nextGame();
   const by = g ? convOf(g) : {};
   const roster = Object.values(S.M.players).filter(p => p.activo).map(p => p.name);
-  const groups = [[4, 3], [2], [1], [0]].map(es => ({ es, list: Object.values(by).filter(c => es.includes(c.estado)) }));
-  const lbl = ['Van', 'Seguramente', '75% que no', 'No pueden'];
-  const pending = roster.filter(p => !by[p]);
   // temporada partido a partido
   const s = S.season, gs = gamesOf(s).filter(x => x.played || x.estado === 'No disputado');
   const ps = uniq(gs.flatMap(x => (S.M.linesByGame[x.id] || []).map(l => l.p)));
@@ -202,8 +199,7 @@ PAGES.asistencia = () => {
   const head = `<div class="pagehead"><div><h1>Asistencia</h1><div class="sub">Convocatoria del próximo partido y quién ha estado en cada jornada</div></div></div>
   ${g ? `<section class="sec grid" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px" id="as-grid">
     <div class="stack" style="gap:16px"><div class="card hl"><div class="lbl" style="color:var(--acc2)">Próximo partido · vs ${esc(g.rival)} · ${fdw(g.date)}${g.hora ? ', ' + esc(g.hora) : ''}</div><div class="small tx2" style="margin-top:6px">Puedes cambiar tu respuesta cuando quieras.</div></div>${convForm(g)}</div>
-    <div class="card stack" style="gap:14px">${groups.map((x, i) => `<div><div class="between"><strong>${lbl[i]}</strong><span class="mut">${x.list.length}</span></div><div class="stack" style="gap:4px;margin-top:6px">${x.list.map(c => `<div class="row small"><span style="flex:1">${esc(c.p)}${c.com ? ` <span class="mut">· ${esc(c.com)}</span>` : ''}</span><span class="mut">${c.t ? fd(String(c.t).slice(0, 10)) : ''}</span></div>`).join('') || '<div class="small dim">—</div>'}</div></div>`).join('')}
-      <div><div class="between"><strong>Sin responder</strong><span class="mut">${pending.length}</span></div><div class="small mut" style="margin-top:6px">${pending.map(esc).join(' · ') || '—'}</div></div></div></section>` : `<section class="sec"><div class="empty">No hay ningún partido programado ahora mismo.</div></section>`}`;
+    ${convBoard(g)}</section>` : `<section class="sec"><div class="empty">No hay ningún partido programado ahora mismo.</div></section>`}`;
   const sq = 'height:26px;border-radius:4px;box-sizing:border-box;';
   const cols = `grid-template-columns:120px repeat(${gs.length},minmax(20px,1fr)) 96px`;
   const grid = gs.length && ps.length ? `<div class="card" style="padding:20px;overflow-x:auto"><div style="display:grid;${cols};gap:4px;align-items:center;min-width:${120 + 96 + gs.length * 24}px">

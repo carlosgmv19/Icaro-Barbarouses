@@ -77,7 +77,7 @@ function doPost(e) {
 
 function guardarConvocatoria_(b) {
   const estado = Number(b.estado);
-  if (!(estado >= 0 && estado <= 4)) return { ok: false, error: 'Estado no válido' };
+  if (!(estado >= 0 && estado <= 3)) return { ok: false, error: 'Estado no válido' };
   const ss = SpreadsheetApp.getActive();
   const jug = filas_(ss.getSheetByName('Jugadores')).map(j => j.Nombre);
   if (jug.indexOf(b.jugador) < 0) return { ok: false, error: 'Jugador desconocido' };
@@ -103,7 +103,7 @@ function guardarConvocatoria_(b) {
   return { ok: true, actualizado: filaExistente >= 0, fecha: Utilities.formatDate(ahora, Session.getScriptTimeZone(), "yyyy-MM-dd'T'HH:mm:ss") };
 }
 
-const ESTADOS = ['No puedo', '75% que no', 'Seguramente pueda', 'Puedo 100%', 'Voy al partido'];
+const ESTADOS = ['No puedo ir', 'No creo que pueda', 'Seguramente vaya', 'Voy seguro'];
 const HIST_COLS = ['Fecha', 'Temporada', 'PartidoID', 'Jugador', 'Estado', 'Respuesta', 'Comentario', 'EstadoAnterior', 'RespuestaAnterior'];
 
 function historial_(ss, o) {

@@ -100,10 +100,9 @@ BPAGES.asistencia = () => {
   const g = nextGame();
   if (!g) return `<div class="bwrap"><div class="empty">No hay ningún partido programado ahora mismo.</div></div>`;
   const by = convOf(g);
-  const groups = [['Van', [3, 4]], ['Seguramente', [2]], ['75% que no', [1]], ['No pueden', [0]]];
   return `<div class="bwrap"><div class="bcard hl"><div class="lbl" style="color:var(--acc2);font-size:12px">Próximo partido · ${esc(g.label.replace('J', 'Jornada '))}</div><div class="cond" style="font-weight:800;font-size:28px">vs ${esc(g.rival)}</div><div class="small tx2">${fdw(g.date)}${g.hora ? ' · ' + esc(g.hora) : ''}${g.pista ? ' · ' + esc(g.pista) : ''}</div></div>
     ${convForm(g, true)}
-    <div class="bcard stack" style="gap:10px"><strong>Así va</strong>${groups.map(([l, es]) => { const list = Object.values(by).filter(c => es.includes(c.estado)); return `<div class="row" style="align-items:flex-start;border-top:1px solid var(--line);padding-top:8px"><span style="width:110px;font-weight:600">${l}</span><span class="small tx2" style="flex:1">${list.map(c => esc(c.p)).join(', ') || '—'}</span><span class="mut">${list.length}</span></div>`; }).join('')}</div></div>`;
+    ${convBoard(g, true)}</div>`;
 };
 
 BPAGES.jugadas = () => {

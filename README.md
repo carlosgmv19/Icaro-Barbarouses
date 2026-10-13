@@ -175,7 +175,7 @@ Columnas principales:
   - `MIN` ya va escalado a 12 minutos por cuarto (apartado 5.3).
   - FGM y FGA incluyen los triples. `+` y `-` son los puntos a favor y en contra con el jugador en pista.
 - **Quintetos:** (Cuarto 5 = prórroga) Temporada, PartidoID, Cuarto, Tramo, J1 … J5, MIN, PF, PC, T2M, T2A, T3M, T3A, TLM, TLA. Los jugadores van en orden alfabético. M = metidos, A = intentados; son los tiros del equipo durante ese tramo.
-- **Convocatoria:** Temporada, PartidoID, Jugador, Estado, Comentario, Actualizado. `Estado`: 0 No puedo, 1 75% que no, 2 Seguramente pueda, 3 Puedo 100%, 4 Voy al partido.
+- **Convocatoria:** Temporada, PartidoID, Jugador, Estado, Comentario, Actualizado. `Estado`: 0 No puedo ir, 1 No creo que pueda, 2 Seguramente vaya, 3 Voy seguro.
 - **ConvocatoriaHistorial:** Fecha, Temporada, PartidoID, Jugador, Estado, Respuesta, Comentario, EstadoAnterior, RespuestaAnterior.
 
 Nombres unificados entre temporadas: el Nacho de 24/25 y 25/26 figura como **Iggy** (misma persona), Daniel como **Dani** y Manu como **Manute**. El Nacho de la 26/27 es un jugador nuevo.
@@ -201,7 +201,7 @@ Se usa después del partido, viendo el vídeo grabado. Todo se guarda solo en el
 
 **Preparar el partido (pestaña Setup)**
 1. Elige el partido en el desplegable. Rellena rival, fecha, temporada e ID.
-2. "Cargar convocados" pone a quienes respondieron "Puedo 100%" o "Voy al partido". Si no hay respuestas, carga la plantilla activa.
+2. "Cargar convocados" pone a quienes respondieron "Voy seguro". Si no hay respuestas, carga la plantilla activa.
 3. Pulsa **🎬 Vídeo** y abre el archivo. El vídeo queda a la izquierda y el tracker a la derecha. El vídeo no se sube a ningún sitio.
 
 **Apuntar (pestañas 1er, 2do, 3ro, 4to y Prórroga)**

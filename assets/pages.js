@@ -19,7 +19,25 @@ function nextGame() {
   const today = HOY.toISOString().slice(0, 10);
   return S.M.games.find(g => g.season === S.M.actual && !g.played && g.estado !== 'Descanso' && g.estado !== 'No disputado' && g.date >= today) || null;
 }
-const ESTADOS = ['No puedo', '75% que no', 'Seguramente pueda', 'Puedo 100%', 'Voy al partido'];
+// 0 No puedo ir · 1 No creo que pueda · 2 Seguramente vaya · 3 Voy seguro
+const ESTADOS = ['No puedo ir', 'No creo que pueda', 'Seguramente vaya', 'Voy seguro'];
+const EST_GROUPS = [
+  { k: 3, t: 'Van seguro', chip: 'background:var(--acc);color:var(--ink);border:1px solid var(--acc)', dot: 'var(--acc)' },
+  { k: 2, t: 'Seguramente van', chip: 'background:var(--accbg);color:var(--acc2);border:1px solid #5C4410', dot: '#8A6A1E' },
+  { k: 1, t: 'No creen que puedan', chip: 'background:var(--card2);color:var(--tx2);border:1px solid var(--line2)', dot: '#5B6475' },
+  { k: 0, t: 'No pueden ir', chip: 'background:#2A1715;color:#F08A7E;border:1px solid #5A2A25', dot: '#B5524A' },
+  { k: null, t: 'Sin responder', chip: 'background:transparent;color:var(--mut);border:1px dashed var(--line2)', dot: 'transparent;border:1px dashed var(--lose)' }];
+function convBoard(g, basic) {
+  const by = convOf(g);
+  const roster = Object.values(S.M.players).filter(p => p.activo).map(p => p.name).sort();
+  const groups = EST_GROUPS.map(G => ({ G, list: G.k == null ? roster.filter(p => !by[p]).map(p => ({ p })) : Object.values(by).filter(c => c.estado === G.k).sort((a, b) => a.p.localeCompare(b.p)) }));
+  const total = Math.max(1, sum(groups, x => x.list.length));
+  const bar = `<div style="display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--card2)">${groups.filter(x => x.list.length).map(x => `<i title="${x.G.t}: ${x.list.length}" style="width:${x.list.length / total * 100}%;background:${x.G.dot.split(';')[0]};${x.G.k == null ? 'background:repeating-linear-gradient(45deg,#2A2F3A 0 4px,transparent 4px 8px)' : ''}"></i>`).join('')}</div>`;
+  const nums = `<div class="row" style="gap:${basic ? 14 : 22}px;flex-wrap:wrap">${groups.map(x => `<div><div class="cond" style="font-weight:800;font-size:${basic ? 26 : 34}px;line-height:1;color:${x.G.k === 3 ? 'var(--acc)' : x.G.k === 0 ? '#F08A7E' : x.G.k == null ? 'var(--mut)' : 'var(--tx)'}">${x.list.length}</div><div class="small mut">${x.G.t}</div></div>`).join('')}</div>`;
+  const rows = groups.map(x => `<div style="border-top:1px solid var(--line);padding-top:12px"><div class="row small" style="gap:8px;margin-bottom:8px"><i style="width:10px;height:10px;border-radius:3px;background:${x.G.dot}"></i><strong>${x.G.t}</strong><span class="mut">· ${x.list.length}</span></div>
+    <div class="chips" style="gap:6px">${x.list.length ? x.list.map(c => `<span title="${c.com ? esc(c.com) : ''}" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-weight:600;font-size:14px;${x.G.chip}">${esc(c.p)}${c.com ? ' <span style="font-weight:400;opacity:.8">· ' + esc(c.com) + '</span>' : ''}</span>`).join('') : '<span class="small dim">Nadie</span>'}</div></div>`).join('');
+  return `<div class="${basic ? 'bcard' : 'card'} stack" style="gap:14px"><strong style="font-size:18px">Así va la convocatoria</strong>${nums}${bar}${rows}</div>`;
+}
 function convOf(g) {
   const by = {}; S.M.conv.filter(c => c.gid === g.id).forEach(c => { if (!by[c.p] || c.t > by[c.p].t) by[c.p] = c; });
   return by;
@@ -69,7 +87,7 @@ PAGES[''] = () => {
         <div class="lbl" style="color:var(--acc2)">Próximo partido · ${esc(nx.label.replace('J', 'Jornada '))} · ${esc(nx.season)}</div>
         <div class="cond" style="font-weight:800;font-size:34px">vs ${esc(nx.rival)}</div>
         <div class="tx2">${fdw(nx.date)}${nx.hora ? ' · ' + esc(nx.hora) : ''}${nx.pista ? ' · ' + esc(nx.pista) : ''}${nx.local === true ? ' · en casa' : nx.local === false ? ' · fuera' : ''}</div>
-        <div class="row small" style="gap:16px"><span><strong class="acc">${vals.filter(c => c.estado >= 3).length}</strong> confirmados</span><span><strong>${vals.filter(c => c.estado === 2).length}</strong> en duda</span><a href="#/asistencia" style="margin-left:auto;font-weight:600">¿Vienes? →</a></div></div>` : ''}
+        <div class="row small" style="gap:16px"><span><strong class="acc">${vals.filter(c => c.estado === 3).length}</strong> van seguro</span><span><strong>${vals.filter(c => c.estado === 2).length}</strong> seguramente</span><span><strong style="color:#F08A7E">${vals.filter(c => c.estado <= 1).length}</strong> no</span><a href="#/asistencia" style="margin-left:auto;font-weight:600">¿Vienes? →</a></div></div>` : ''}
     </div>
   </section>
   <section class="sec">
