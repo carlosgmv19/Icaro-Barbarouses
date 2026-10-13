@@ -1,0 +1,3 @@
+Aquí van los clips de jugadas (.mp4) que saca la herramienta Recortar jugadas.
+No cambies el nombre de los archivos: de él saca la web la jornada, los jugadores y las palabras clave.
+Ejemplo: 2627-J03__Carlos_Alvaro__triple_asistencia__triple-desde-la-esquina__01.mp4
