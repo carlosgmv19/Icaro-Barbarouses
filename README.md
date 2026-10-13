@@ -201,7 +201,7 @@ Se usa después del partido, viendo el vídeo grabado. Todo se guarda solo en el
 
 **Preparar el partido (pestaña Setup)**
 1. Elige el partido en el desplegable. Rellena rival, fecha, temporada e ID.
-2. "Cargar convocados" pone a quienes respondieron "Voy seguro". Si no hay respuestas, carga la plantilla activa.
+2. **Convocados:** cada jugador es un botón; al pulsarlo queda en naranja (convocado) y al volver a pulsarlo se quita. Al principio no hay nadie marcado. Primero salen, en verde, los que dijeron "Voy seguro" en la web; luego, en amarillo, los de "Seguramente vaya"; después los que no han respondido y al final, en rojo, los que dijeron que no. Se puede convocar a cualquiera, y "+ Añadir" mete a alguien que no está en la plantilla. Máximo 10.
 3. Pulsa **🎬 Vídeo** y abre el archivo. El vídeo queda a la izquierda y el tracker a la derecha. El vídeo no se sube a ningún sitio.
 
 **Apuntar (pestañas 1er, 2do, 3ro, 4to y Prórroga)**
