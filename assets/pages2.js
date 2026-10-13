@@ -14,7 +14,7 @@ PAGES.graficas = () => {
   const mode = ui('gr.mode', 'evo'), st = ui('gr.stat', 'PTS'), sy = ui('gr.y', 'REB'), em = ui('gr.em', 'game');
   const col = p => COLORS[sel.indexOf(p) % COLORS.length];
   const W = 900, H = 360, PADL = 48;
-  let chart = '', caption = '';
+  let chart = '', caption = '', scatterRows = '', scatterHead = '';
   if (!names.length) chart = '<div class="empty">Aún no hay partidos jugados en esta temporada.</div>';
   else if (mode === 'evo') {
     const N = games.length; const xOf = i => PADL + (i + 0.5) * (W - PADL) / N;
@@ -36,12 +36,24 @@ PAGES.graficas = () => {
     caption = `Media por partido de liga · ${s}.`;
   } else {
     const pts = names.filter(p => sp[p].gp >= minPJ(s)).map(p => ({ p, x: gval(sp[p], st), y: gval(sp[p], sy) })).filter(o => isNum(o.x) && isNum(o.y));
+    const pct = k => k === 'TS' || k === 'FGp';
+    const fx = (k, v) => pct(k) ? nf(v) + '%' : k === 'PM' ? sg(v) : nf(v);
+    const ticks = (lo, hi) => { const step = [0.5, 1, 2, 5, 10, 20, 25, 50].find(x => (hi - lo) / x <= 6) || 100; const a = Math.floor(lo / step) * step, b = Math.ceil(hi / step) * step; const t = []; for (let v = a; v <= b + 1e-9; v += step) t.push(Math.round(v * 100) / 100); return t; };
     const xs = pts.map(o => o.x), ys = pts.map(o => o.y);
-    const x0 = Math.min(0, ...xs), x1 = Math.max(1, ...xs) * 1.1, y0 = Math.min(0, ...ys), y1 = Math.max(1, ...ys) * 1.1;
-    const X = v => PADL + (v - x0) / (x1 - x0) * (W - PADL - 20), Y = v => 10 + (H - 30) * (1 - (v - y0) / (y1 - y0));
-    chart = `<svg viewBox="0 0 ${W} ${H + 10}" style="width:100%;height:auto;min-width:560px" role="img" aria-label="Dispersión"><line x1="${PADL}" x2="${W}" y1="${Y(y0)}" y2="${Y(y0)}" stroke="#3A404C"/><line x1="${PADL}" x2="${PADL}" y1="10" y2="${Y(y0)}" stroke="#3A404C"/>
-      ${pts.map(o => `<circle cx="${X(o.x)}" cy="${Y(o.y)}" r="8" fill="${sel.includes(o.p) ? col(o.p) : '#5B6475'}" opacity=".9"><title>${esc(o.p)}: ${nf(o.x)} / ${nf(o.y)}</title></circle><text x="${X(o.x) + 12}" y="${Y(o.y) + 4}" fill="#F1F2F4" font-size="13">${esc(o.p)}</text>`).join('')}
-      <text x="${W}" y="${H + 6}" text-anchor="end" fill="#A3AAB6" font-size="12">${esc((GSTATS_X.find(x => x[0] === st) || [, ''])[1])} →</text><text x="${PADL + 6}" y="22" fill="#A3AAB6" font-size="12">↑ ${esc((GSTATS_X.find(x => x[0] === sy) || [, ''])[1])}</text></svg>`;
+    const tx = ticks(Math.min(0, ...xs), Math.max(1, ...xs)), ty = ticks(Math.min(0, ...ys), Math.max(1, ...ys));
+    const x0 = tx[0], x1 = tx[tx.length - 1], y0 = ty[0], y1 = ty[ty.length - 1];
+    const L = 64, R = W - 90, T = 14, B = H - 34;
+    const X = v => L + (v - x0) / (x1 - x0) * (R - L), Y = v => B - (v - y0) / (y1 - y0) * (B - T);
+    const nx = (GSTATS_X.find(x => x[0] === st) || [, ''])[1], ny = (GSTATS_X.find(x => x[0] === sy) || [, ''])[1];
+    chart = `<svg viewBox="0 0 ${W} ${H + 24}" style="width:100%;height:auto;min-width:600px" role="img" aria-label="Dispersión: ${esc(nx)} frente a ${esc(ny)}">
+      ${tx.map(v => `<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${B}" stroke="#262A33"/><text x="${X(v)}" y="${B + 18}" text-anchor="middle" fill="#A3AAB6" font-size="12">${fx(st, v)}</text>`).join('')}
+      ${ty.map(v => `<line x1="${L}" x2="${R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#262A33"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" fill="#A3AAB6" font-size="12">${fx(sy, v)}</text>`).join('')}
+      <line x1="${L}" x2="${R}" y1="${B}" y2="${B}" stroke="#5B6475"/><line x1="${L}" x2="${L}" y1="${T}" y2="${B}" stroke="#5B6475"/>
+      ${pts.map(o => `<circle cx="${X(o.x)}" cy="${Y(o.y)}" r="8" fill="${sel.includes(o.p) ? col(o.p) : '#5B6475'}" opacity=".9"><title>${esc(o.p)} · ${esc(nx)} ${fx(st, o.x)} · ${esc(ny)} ${fx(sy, o.y)}</title></circle><text x="${X(o.x) + 12}" y="${Y(o.y) - 1}" fill="#F1F2F4" font-size="13" font-weight="600">${esc(o.p)}</text><text x="${X(o.x) + 12}" y="${Y(o.y) + 13}" fill="#A3AAB6" font-size="11">${fx(st, o.x)} · ${fx(sy, o.y)}</text>`).join('')}
+      <text x="${(L + R) / 2}" y="${H + 20}" text-anchor="middle" fill="#C9CED6" font-size="13" font-weight="600">${esc(nx)} →</text>
+      <text transform="translate(16 ${(T + B) / 2}) rotate(-90)" text-anchor="middle" fill="#C9CED6" font-size="13" font-weight="600">${esc(ny)} →</text></svg>`;
+    scatterRows = pts.slice().sort((a, b) => b.x - a.x).map(o => `<tr><td><span class="row" style="gap:8px"><i style="width:12px;height:12px;border-radius:3px;background:${sel.includes(o.p) ? col(o.p) : '#5B6475'}"></i>${plink(o.p)}</span></td><td>${sp[o.p].gp}</td><td>${fx(st, o.x)}</td><td>${fx(sy, o.y)}</td></tr>`).join('');
+    scatterHead = `<tr><th>Jugador</th><th>PJ</th><th>${esc(nx)}</th><th>${esc(ny)}</th></tr>`;
     caption = `Cada punto es un jugador con al menos ${minPJ(s)} partidos de liga. Los marcados en la lista salen en color.`;
   }
   const tog = p => { const a = sel.slice(); const i = a.indexOf(p); if (i >= 0) a.splice(i, 1); else if (a.length < 6) a.push(p); return a; };
@@ -53,13 +65,14 @@ PAGES.graficas = () => {
     <div class="card sm stack" style="gap:6px;align-self:start"><div class="between"><strong>Jugadores</strong><span class="small mut">${sel.length}/6</span></div>
       ${names.map(p => `<button type="button" ${on('gr.sel', tog(p))} style="display:flex;align-items:center;gap:10px;height:44px;padding:0 10px;border-radius:10px;border:1px solid ${sel.includes(p) ? 'var(--line2)' : 'transparent'};background:${sel.includes(p) ? 'var(--card2)' : 'transparent'};cursor:pointer;text-align:left">
         <span style="width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#0E1014;${sel.includes(p) ? 'background:' + col(p) : 'border:2px solid #5B6475'}">${sel.includes(p) ? '✓' : ''}</span><span style="flex:1;font-weight:600">${esc(p)}</span><span class="small mut">${sp[p].gp} PJ</span></button>`).join('')}
-      <div class="row" style="gap:8px;margin-top:6px"><button type="button" class="chip" ${on('gr.sel', [])}>Quitar todos</button><button type="button" class="chip" ${on('gr.sel', names.slice().sort((a, b) => (sp[b].tot.MIN || 0) - (sp[a].tot.MIN || 0)).slice(0, 5))}>Los 5 con más min.</button></div>
+      <div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap"><button type="button" class="chip" ${on('gr.sel', [])}>Quitar todos</button><button type="button" class="chip" ${on('gr.sel', names.slice().sort((a, b) => (sp[b].tot.MIN || 0) - (sp[a].tot.MIN || 0)).slice(0, 5))}>Los 5 con más min.</button></div>
       ${sel.length >= 6 ? '<div class="small mut">Máximo 6 a la vez.</div>' : ''}</div>
     <div class="stack" style="gap:16px;min-width:0">
       <div class="chips"><span class="small mut" style="align-self:center">${mode === 'scatter' ? 'Eje horizontal' : 'Estadística'}</span>${statList.map(([k, l]) => `<button type="button" class="chip ${st === k ? 'on' : ''}" ${on('gr.stat', k)}>${l}</button>`).join('')}</div>
       ${mode === 'scatter' ? `<div class="chips"><span class="small mut" style="align-self:center">Eje vertical</span>${GSTATS_X.map(([k, l]) => `<button type="button" class="chip ${sy === k ? 'on' : ''}" ${on('gr.y', k)}>${l}</button>`).join('')}</div>` : ''}
       ${mode === 'evo' ? `<div class="chips">${[['game', 'Partido a partido'], ['cum', 'Media acumulada']].map(([k, l]) => `<button type="button" class="chip ${em === k ? 'on' : ''}" ${on('gr.em', k)}>${l}</button>`).join('')}</div>` : ''}
       <div class="card" style="overflow-x:auto">${mode !== 'scatter' && sel.length ? `<div class="row" style="gap:16px;flex-wrap:wrap;margin-bottom:12px">${sel.map(p => `<span class="row small" style="gap:6px"><i style="width:12px;height:12px;border-radius:3px;background:${col(p)}"></i>${esc(p)}</span>`).join('')}</div>` : ''}${sel.length || mode === 'scatter' ? chart : '<div class="empty">Marca algún jugador en la lista.</div>'}<div class="note" style="margin-top:12px">${caption}</div></div>
+      ${mode === 'scatter' && scatterRows ? `<div><h3 style="margin-bottom:12px">En números</h3><div class="tw"><table class="t">${scatterHead}${scatterRows}</table></div></div>` : ''}
       ${mode !== 'scatter' && sel.length ? `<div><h3 style="margin-bottom:12px">En números</h3><div class="tw"><table class="t"><tr><th>Jugador</th><th>PJ</th><th>Media</th><th>Máximo</th><th>Mínimo</th><th>Últimos 5</th></tr>${tbl}</table></div></div>` : ''}
     </div></section>`;
 };
