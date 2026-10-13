@@ -199,16 +199,21 @@ PAGES.asistencia = () => {
   const played = gs.filter(x => x.played && (S.M.linesByGame[x.id] || []).length);
   const avgN = played.length ? sum(played, x => S.M.linesByGame[x.id].length) / played.length : 0;
   const five = played.filter(x => S.M.linesByGame[x.id].length === 5).length;
-  return `<div class="pagehead"><div><h1>Asistencia</h1><div class="sub">Convocatoria del próximo partido y quién ha estado en cada jornada</div></div></div>
+  const head = `<div class="pagehead"><div><h1>Asistencia</h1><div class="sub">Convocatoria del próximo partido y quién ha estado en cada jornada</div></div></div>
   ${g ? `<section class="sec grid" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px" id="as-grid">
     <div class="stack" style="gap:16px"><div class="card hl"><div class="lbl" style="color:var(--acc2)">Próximo partido · vs ${esc(g.rival)} · ${fdw(g.date)}${g.hora ? ', ' + esc(g.hora) : ''}</div><div class="small tx2" style="margin-top:6px">Puedes cambiar tu respuesta cuando quieras.</div></div>${convForm(g)}</div>
     <div class="card stack" style="gap:14px">${groups.map((x, i) => `<div><div class="between"><strong>${lbl[i]}</strong><span class="mut">${x.list.length}</span></div><div class="stack" style="gap:4px;margin-top:6px">${x.list.map(c => `<div class="row small"><span style="flex:1">${esc(c.p)}${c.com ? ` <span class="mut">· ${esc(c.com)}</span>` : ''}</span><span class="mut">${c.t ? fd(String(c.t).slice(0, 10)) : ''}</span></div>`).join('') || '<div class="small dim">—</div>'}</div></div>`).join('')}
-      <div><div class="between"><strong>Sin responder</strong><span class="mut">${pending.length}</span></div><div class="small mut" style="margin-top:6px">${pending.map(esc).join(' · ') || '—'}</div></div></div></section>` : `<section class="sec"><div class="empty">No hay ningún partido programado ahora mismo.</div></section>`}
-  ${gs.length && ps.length ? `<section class="sec"><div class="between" style="margin-bottom:14px"><h2>Temporada ${esc(s)} partido a partido</h2><div class="row small mut" style="gap:14px"><span>● Jugó</span><span>○ No pudo</span></div></div>
-    <div class="tw"><table class="t sticky1"><tr><th>Jugador</th>${gs.map(x => `<th title="${esc(x.rival)} · ${fd(x.date)}">${x.label}</th>`).join('')}<th>Jugados</th></tr>
-    ${ps.map(p => `<tr><td>${plink(p)}</td>${gs.map(x => { const inn = (S.M.linesByGame[x.id] || []).some(l => l.p === p); return `<td style="text-align:center;color:${inn ? 'var(--acc)' : 'var(--dim)'}">${x.played ? (inn ? '●' : '○') : '–'}</td>`; }).join('')}<td style="font-weight:700">${cnt(p)} <span class="small mut">· ${pc0(cnt(p) / Math.max(1, played.length))}</span></td></tr>`).join('')}
-    <tr><td class="mut">Jugadores</td>${gs.map(x => `<td style="text-align:center" class="mut">${(S.M.linesByGame[x.id] || []).length || '–'}</td>`).join('')}<td></td></tr></table></div>
-    <div class="note" style="margin-top:10px">Media de ${n1(avgN)} jugadores por partido${five ? `, y ${five} de los ${played.length} partidos se jugaron con 5 (sin ningún cambio)` : ''}.</div></section>` : ''}`;
+      <div><div class="between"><strong>Sin responder</strong><span class="mut">${pending.length}</span></div><div class="small mut" style="margin-top:6px">${pending.map(esc).join(' · ') || '—'}</div></div></div></section>` : `<section class="sec"><div class="empty">No hay ningún partido programado ahora mismo.</div></section>`}`;
+  const sq = 'height:26px;border-radius:4px;box-sizing:border-box;';
+  const cols = `grid-template-columns:120px repeat(${gs.length},minmax(20px,1fr)) 96px`;
+  const grid = gs.length && ps.length ? `<div class="card" style="padding:20px;overflow-x:auto"><div style="display:grid;${cols};gap:4px;align-items:center;min-width:${120 + 96 + gs.length * 24}px">
+      <div></div>${gs.map(x => `<a href="#/partido/${encodeURIComponent(x.id)}" title="${esc(x.rival)} · ${fd(x.date)}" style="font-size:11px;color:var(--mut);text-align:center">${x.label}</a>`).join('')}<div class="small mut" style="text-align:right">Jugados</div>
+      ${ps.map(p => `${plink(p, `<span style="font-weight:600;font-size:15px">${esc(p)}</span>`)}${gs.map(x => { const inn = (S.M.linesByGame[x.id] || []).some(l => l.p === p);
+        return `<div title="${esc(p)} · ${x.label} ${esc(x.rival)}${!x.played ? ' · no disputado' : inn ? ' · jugó' : ' · no pudo'}" style="${sq}${!x.played ? 'border:1px dashed var(--line2)' : inn ? 'background:var(--acc)' : 'background:#262A33'}"></div>`; }).join('')}<div style="text-align:right"><strong>${cnt(p)}</strong> <span class="small mut">· ${pc0(cnt(p) / Math.max(1, played.length))}</span></div>`).join('')}
+      <div class="small mut" style="padding-top:8px">Jugadores</div>${gs.map(x => `<div class="small tx2" style="text-align:center;padding-top:8px">${(S.M.linesByGame[x.id] || []).length || '–'}</div>`).join('')}<div></div></div></div>` : '';
+  return head + (grid ? `<section class="sec"><div class="between" style="margin-bottom:14px"><h2>Temporada ${esc(s)} partido a partido</h2>
+    <div class="row small tx2" style="gap:18px"><span class="row" style="gap:6px"><i style="width:14px;height:14px;border-radius:4px;background:var(--acc)"></i>Jugó</span><span class="row" style="gap:6px"><i style="width:14px;height:14px;border-radius:4px;background:#262A33"></i>No pudo</span><span class="row" style="gap:6px"><i style="width:12px;height:12px;border-radius:4px;border:1px dashed var(--lose)"></i>No disputado</span></div></div>
+    ${grid}<div class="note" style="margin-top:10px">Media de ${n1(avgN)} jugadores por partido${five ? `, y ${five} de los ${played.length} partidos se jugaron con 5 (sin ningún cambio)` : ''}.</div></section>` : '');
 };
 
 /* ============ HISTÓRICO ============ */

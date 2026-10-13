@@ -267,9 +267,9 @@ function clipCard(c, opt) {
 }
 
 /* ---------------- cabecera, pie y rutas ---------------- */
-const NAV_FULL = [['', 'Inicio'], ['calendario', 'Calendario'], ['plantilla', 'Plantilla'], ['estadisticas', 'Estadísticas'], ['graficas', 'Gráficas'], ['quintetos', 'Quintetos'],
-  ['records', 'Récords'], ['jugadas', 'Jugadas'], ['asistencia', 'Asistencia'], ['historico', 'Histórico']];
-const NAV_BASIC = [['', 'Inicio'], ['calendario', 'Calendario'], ['plantilla', 'Jugadores'], ['estadisticas', 'Stats'], ['asistencia', 'Asistencia'], ['jugadas', 'Jugadas']];
+const NAV_FULL = [['', 'Inicio'], ['asistencia', 'Asistencia'], ['calendario', 'Calendario'], ['plantilla', 'Plantilla'], ['estadisticas', 'Estadísticas'], ['graficas', 'Gráficas'], ['quintetos', 'Quintetos'],
+  ['records', 'Récords'], ['jugadas', 'Jugadas'], ['historico', 'Histórico']];
+const NAV_BASIC = [['', 'Inicio'], ['asistencia', 'Asistencia'], ['calendario', 'Calendario'], ['plantilla', 'Jugadores'], ['estadisticas', 'Stats'], ['jugadas', 'Jugadas']];
 const SECTION_OF = { partido: 'calendario', jugador: 'plantilla', herramientas: '' };
 
 function route() {
