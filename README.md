@@ -3,17 +3,71 @@
 Documentación de todo lo que compone el proyecto y de cómo poner en marcha cada parte.
 Última actualización: 13 de octubre de 2026 (temporada 26/27).
 
+## 0. Arrancar la web paso a paso
+
+Se hace una sola vez. Hasta que acabes el paso 3, la web enseña los **datos de ejemplo** (un aviso naranja arriba lo indica).
+
+**Paso 1 · Instalar el script en el Sheet (5 min)**
+1. Abre el [Google Sheet](https://docs.google.com/spreadsheets/d/1N6oQY-zU6FefQ8Acj9QWua1Vyo71VWBaLkBQwKzky50/edit) → **Extensiones → Apps Script**.
+2. Borra lo que haya y pega el contenido de `backend/Code.gs` del repositorio. Guarda (icono del disquete).
+3. **Implementar → Nueva implementación** → rueda dentada → **Aplicación web**.
+   - Ejecutar como: **Yo**. Quién tiene acceso: **Cualquier usuario**.
+4. **Implementar** → autoriza los permisos. Si sale "Google no ha verificado esta aplicación": *Configuración avanzada → Ir a … (no seguro)*; es tu propio script.
+5. Copia la **URL de la aplicación web** (termina en `/exec`).
+6. Comprueba: pega esa URL en el navegador seguida de `?action=setup`. Debe salir un texto que empieza por `{"ok":true`.
+
+**Paso 2 · Activar GitHub Pages (1 min)**
+1. En GitHub, abre el repositorio **Icaro-Barbarouses** → **Settings → Pages**.
+2. *Source*: **Deploy from a branch**. *Branch*: **main** y carpeta **/ (root)** → **Save**.
+3. En un par de minutos la web está en **https://carlosgmv19.github.io/Icaro-Barbarouses/** (todavía con los datos de ejemplo).
+
+**Paso 3 · Conectar la web con el Sheet (1 min)**
+1. En el repositorio, abre `config.js` → icono del lápiz (*Edit*).
+2. Pega la URL del paso 1 entre las comillas de `url: ''`. Queda así: `url: 'https://script.google.com/macros/s/…/exec',`
+3. **Commit changes**. En uno o dos minutos la web ya lee el Sheet y el aviso naranja desaparece.
+
+**Paso 4 · Probarlo todo**
+1. Abre la web y cambia entre **Básico** y **Completo** con el botón de arriba a la derecha. El móvil abre en Básico y el ordenador en Completo; cada navegador recuerda la elección.
+2. Pie de página → **Herramientas** → PIN **80085** → se abren *Apuntar partido* y *Recortar jugadas*. El PIN está en la hoja **Acceso** del Sheet: cámbialo ahí cuando quieras.
+3. **Asistencia** → elige tu nombre y una respuesta → *Enviar*. Comprueba que aparece en las hojas Convocatoria y ConvocatoriaHistorial, y después borra esas filas de prueba.
+4. Con el primer partido: apúntalo con *Apuntar partido* (desde Herramientas ya lleva la URL y el PIN), pulsa **Enviar al Sheet** y recarga la web. Inicio, Estadísticas y la ficha de cada jugador pasan a enseñar la 26/27.
+
+**Paso 5 · Compartir**
+- Manda al grupo el enlace `https://carlosgmv19.github.io/Icaro-Barbarouses/`. El PIN, solo a quien vaya a apuntar partidos.
+
+**Cómo funciona el cambio de temporada.** La web abre la temporada marcada como *Actual* en la hoja Temporadas en cuanto tiene un partido jugado; mientras no lo tenga, enseña la última temporada con partidos. Plantilla y fichas usan las medias de la última temporada de cada jugador hasta que juegue esta. En el modo completo, el selector de temporada deja ver las anteriores.
+
+**Cómo subir clips de jugadas.** En GitHub, carpeta `jugadas` → *Add file → Upload files* → arrastra los .mp4 que genera Recortar jugadas, sin cambiarles el nombre → *Commit changes*. Salen solos en Jugadas, en Inicio (modo básico) y en la ficha de cada jugador. GitHub admite hasta 100 MB por archivo y conviene que el repositorio no pase de 1 GB.
+
+**Para cambiar algo de la web más adelante** se edita el código del repositorio; los datos del Sheet no se tocan.
+
+### Archivos del repositorio
+
+| Archivo | Qué es |
+|---|---|
+| `index.html` | La web (una sola página; las secciones van por `#/…` en la dirección) |
+| `config.js` | URL del script del Sheet. Es lo único que hay que tocar |
+| `assets/core.js` | Carga de datos, cálculos, cabecera, botón Básico/Completo y rutas |
+| `assets/pages.js`, `assets/pages2.js` | Páginas del modo completo |
+| `assets/basic.js` | Páginas del modo básico |
+| `assets/roles.js` | Roles automáticos |
+| `assets/app.css` | Estilos |
+| `datos-ejemplo.json` | Copia de los datos del Sheet a 13 oct 2026, para ver la web antes de conectarla |
+| `herramientas/` | `icaro_stats.html` (apuntar partido) y `recortar_jugadas.html`. Piden el PIN si se abren desde la web |
+| `jugadas/` | Los clips |
+| `backend/Code.gs` | El script del Sheet (se pega en Apps Script; GitHub no lo usa) |
+
 ## 1. Qué hay y en qué estado está
 
 | Pieza | Dónde está | Para qué sirve | Estado |
 |---|---|---|---|
 | Base de datos | Google Sheet [Icaro Barbarouses · Web (base de datos)](https://docs.google.com/spreadsheets/d/1N6oQY-zU6FefQ8Acj9QWua1Vyo71VWBaLkBQwKzky50/edit) | Guarda calendario, jugadores, estadísticas, quintetos y asistencia | Creada y cargada (24/25, 25/26 y calendario 26/27) |
-| Script del Sheet | `Code.gs` | Deja que el tracker y la web lean y escriban en el Sheet | Escrito. **Falta instalarlo** (apartado 3.2). Probado solo en simulación |
+| Script del Sheet | `backend/Code.gs` | Deja que el tracker y la web lean y escriban en el Sheet. Comprueba el PIN de las herramientas | Escrito. **Falta instalarlo** (apartado 0, paso 1). Probado solo en simulación |
 | Tracker | `icaro_stats.html` | Apuntar estadísticas viendo el vídeo, con marcador, reloj y quintetos | Funciona. El envío al Sheet depende de instalar el script |
 | Recortar jugadas | `recortar_jugadas.html` | Marcar jugadas en el vídeo y sacar un clip por jugada | Funciona. Probado con un vídeo corto de prueba |
 | Roles automáticos | `roles.js` | Calcula el título de rol de cada jugador según sus stats | Escrito y probado con los datos de 25/26 |
 | Diseño de la web | [Web Icaro Barbarouses](https://claude.ai/artifact/8xtoutGp2PD6FJj9qPkiZN) | Maqueta de todas las páginas, con datos reales de la 25/26 | Maqueta. No es la web real |
-| Web real | — | Sitio en GitHub Pages que lee el Sheet | **Sin construir** (apartado 7) |
+| Web real | Repositorio [carlosgmv19/Icaro-Barbarouses](https://github.com/carlosgmv19/Icaro-Barbarouses) → `https://carlosgmv19.github.io/Icaro-Barbarouses/` | La web pública, con modo completo y básico, que lee el Sheet | Construida y subida. Falta activar GitHub Pages y conectar el Sheet (apartado 0) |
 
 Los vídeos de partido usados en las pruebas eran de 2 minutos. Con un partido real de una hora no se ha probado nada todavía.
 
@@ -82,6 +136,7 @@ No hay PIN. Quien tenga la URL puede enviar respuestas de asistencia y partidos.
 1. Abre `icaro_stats.html` en el navegador (Chrome o Edge).
 2. Pestaña **Setup** → pega la URL `/exec` → **Cargar partidos del Sheet**.
 3. La URL queda guardada en ese navegador. No hay que volver a ponerla.
+4. Para enviar partidos hace falta el PIN de Herramientas. Abierto desde la web (Herramientas → Apuntar partido) ya lo lleva; abierto como archivo, escríbelo en Setup → PIN de herramientas.
 
 ## 4. Qué hacer después de cada partido
 
@@ -407,11 +462,7 @@ Catálogo completo (68 roles):
 
 1. **Instalar `Code.gs`** y probar un envío real desde el tracker y una respuesta de asistencia.
 2. **Probar con un partido real de una hora:** apuntado completo, marcador incrustado y recorte de jugadas.
-3. **Construir la web real** para GitHub Pages a partir del diseño:
-   - Leer el Sheet con `…/exec?action=all`.
-   - Enviar la asistencia con `action: "convocatoria"`.
-   - Leer la carpeta `jugadas` del repositorio y repartir los clips según su nombre.
-   - Alojar también el tracker y la herramienta de jugadas en el mismo repositorio.
+3. **Activar GitHub Pages y conectar `config.js`** (apartado 0).
 4. **Rellenar a mano en el Sheet:** fotos y bio de Jugadores, enlaces de vídeo de cada partido.
 
 ## 8. Problemas frecuentes
