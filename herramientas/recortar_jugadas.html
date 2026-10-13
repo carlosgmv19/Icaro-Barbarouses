@@ -341,7 +341,7 @@ document.body.appendChild(d)})})();
     var cs = $('oOnly').checked ? shown() : order();
     if (!cs.length) { toast('No hay jugadas que recortar'); return; }
     if (!S.jor) { toast('Marca antes la jornada del partido'); return; }
-    var base = videoName || 'partido.mp4', dot = base.lastIndexOf('.'), stem = dot > 0 ? base.slice(0, dot) : base, src = P.board ? stem + '_marcador.mp4' : base;
+    var base = videoName || 'partido.mp4', dot = base.lastIndexOf('.'), stem = dot > 0 ? base.slice(0, dot) : base, src = P.board && !/_marcador$/i.test(stem) ? stem + '_marcador.mp4' : base;   // si ya se abrió el vídeo con marcador, se usa tal cual
     var enc = P.web !== false ? '-vf "scale=-2:\'min(720,ih)\'" -c:v libx264 -preset veryfast -crf 26 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart' : '-c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -c:a aac -movflags +faststart';
     var cmds = cs.map(function (c) { return 'ffmpeg -y -loglevel error -ss ' + c.a.toFixed(1) + ' -i "' + src + '" -t ' + (c.b - c.a).toFixed(1) + ' ' + enc + ' "jugadas/' + fileName(c) + '"'; });
     var txt, file;
