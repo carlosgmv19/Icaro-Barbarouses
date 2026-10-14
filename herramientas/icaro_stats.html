@@ -259,6 +259,25 @@ body.has-video #vDock{display:flex;flex-direction:column}
 .v-modal .acts{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap}
 .v-modal .acts .go{background:var(--accent);border-color:var(--accent);color:#000}
 .v-modal .acts .go:disabled{opacity:.4;cursor:not-allowed}
+.v-modal .box.jg{width:min(780px,96vw);max-height:94vh;overflow:auto;gap:10px}
+.jg-vid{width:100%;max-height:40vh;background:#000;border-radius:8px;display:block}
+.jg-tl{position:relative;height:28px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;cursor:pointer;overflow:hidden}
+.jg-tl .sel{position:absolute;top:0;bottom:0;background:rgba(249,115,22,.28);border-left:2px solid var(--accent);border-right:2px solid var(--accent)}
+.jg-tl .ph{position:absolute;top:0;bottom:0;width:2px;background:#fff}
+.jg-tl .lb{position:absolute;bottom:2px;font-size:10px;color:var(--muted);pointer-events:none}
+.jg-tm{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;font-size:13px;color:var(--muted)}
+.jg-tm .g{display:flex;align-items:center;gap:4px}
+.jg-tm input{width:72px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:5px;text-align:center;font-family:'Barlow',sans-serif;font-size:14px}
+.jg-tm button,.jg-sm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer}
+.jg-tm button:hover,.jg-sm:hover{border-color:var(--accent)}
+.jg-lbl{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.jg-desc{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 10px;border-radius:6px;font-family:'Barlow',sans-serif;font-size:14px}
+.jg-row{display:grid;grid-template-columns:30px 112px 1fr 30px 30px;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--border);font-size:13px}
+.jg-row .cp{background:var(--bg3);border:1px solid var(--border);color:var(--accent);border-radius:5px;height:26px;cursor:pointer}
+.jg-row .tt{font-variant-numeric:tabular-nums;color:var(--muted)}
+.jg-row .who{font-weight:700}
+.jg-row .kw{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--bg3);border:1px solid var(--border);color:var(--text);margin:2px 3px 0 0}
+.jg-row .ed{background:transparent;border:1px solid var(--border);color:var(--text);border-radius:5px;width:26px;height:24px;cursor:pointer}
 #vChgBar{display:none;padding:8px 10px;background:rgba(59,130,246,.15);border-bottom:1px solid var(--accent2);font-size:13px;color:#bfdbfe}
 #vCmd{margin:0 10px 10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--muted);white-space:pre-wrap;word-break:break-all}
 </style>
@@ -284,7 +303,7 @@ document.body.appendChild(d)})})();
     <button onclick="vSet('s')" title="El cuarto elegido empieza en este momento del vídeo">▶ Inicio de cuarto</button>
     <button onclick="vSet('e')" title="El cuarto elegido acaba en este momento del vídeo">⏹ Fin de cuarto</button>
     <label title="Lo que marca el reloj cuando empieza el cuarto elegido (si empieza con menos tiempo, cámbialo)">reloj al empezar<input id="vC0" type="text" style="width:56px" onchange="vSetC0(this.value)"></label>
-    <button id="vMarkBtn" onclick="vMarkPlay()" title="Guarda este momento para recortar la jugada luego con la herramienta de jugadas (tecla J)" style="border-color:var(--accent);color:var(--accent)">⭐ Jugada</button>
+    <button id="vMarkBtn" onclick="jgOpen()" title="Abre el recortador con 5 s antes y 5 s después de este momento (tecla J)" style="border-color:var(--accent);color:var(--accent)">⭐ Jugada</button>
     <button id="vChg" onclick="vChange()" title="Para el reloj para hacer cambios; al confirmar, el quinteto nuevo empieza a contar">🔁 Cambio</button>
     <button id="vBrk" onclick="vBreak()" title="Descanso entre cuartos, lesión o parón: el vídeo avanza rápido; al volver el juego, retrocede 10 s para marcar el momento exacto">⏩ Descanso / parón</button>
     <button id="vPauseBtn" onclick="vPause()" title="Para o reanuda el reloj del cuarto">⏸ Parar reloj</button>
@@ -311,7 +330,6 @@ document.body.appendChild(d)})})();
     <button onclick="vExportAss()">⬇ Descargar marcador (.ass)</button>
     <button onclick="vCopyCmd()">Copiar comando ffmpeg</button>
     <button onclick="vAssBat()" title="Archivo para hacer doble clic: incrusta el marcador sin abrir la terminal">⬇ Incrustar marcador (.bat)</button>
-    <button onclick="vExportMarks()" title="Lista de momentos marcados con ⭐ Jugada, para cargarla en la herramienta de recortar jugadas">⬇ Jugadas marcadas (.txt) <span id="vMkN"></span></button>
     <button onclick="vClose()">✕ Cerrar vídeo</button>
   </div>
   <div class="v-dirs">
@@ -322,20 +340,18 @@ document.body.appendChild(d)})})();
   </div>
   <div class="v-pane" id="vPaneC" style="display:none">
     <div class="c-opts">
-      <label>Al pulsar ✂ guardar <input id="cPre" type="number" min="0" max="60" onchange="vClipCfg()"> s antes y <input id="cPost" type="number" min="0" max="30" onchange="vClipCfg()"> s después</label>
-      <button class="vx" style="width:auto;padding:0 10px;height:26px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:5px;cursor:pointer" onclick="vClipAdd(true)">+ Añadir a mano</button>
+      <label>Al pulsar ⭐ coger <input id="cPre" type="number" min="0" max="60" onchange="vClipCfg()"> s antes y <input id="cPost" type="number" min="0" max="60" onchange="vClipCfg()"> s después</label>
+      <button class="jg-sm" onclick="jgOpen()">+ Jugada en este momento</button>
     </div>
-    <div class="c-row" style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px"><span></span><span>Inicio</span><span>Fin</span><span>Jugador</span><span>Nota</span><span></span></div>
     <div class="v-list" id="vClips"></div>
     <div class="c-opts">
-      <label><input type="checkbox" id="cBoard" onchange="vClipCfg()"> Recortar del vídeo que ya tiene el marcador</label>
-      <label><input type="checkbox" id="cExact" onchange="vClipCfg()"> Corte exacto (más lento)</label>
+      <label><input type="checkbox" id="cBoard" onchange="vClipCfg()"> Recortar del vídeo con marcador si existe (…_marcador.mp4)</label>
     </div>
     <div class="v-exp">
       <button onclick="vClipScript('bat')">⬇ Recortar en Windows (.bat)</button>
       <button onclick="vClipScript('sh')">⬇ Recortar en Mac/Linux (.sh)</button>
     </div>
-    <p class="hint" style="margin:0 10px 10px">En Windows, el .bat va solo a la carpeta del vídeo (la que pone en Marcador → Carpeta del vídeo), así que puedes abrirlo con doble clic desde Descargas. En Mac: pon el .sh junto al vídeo y ejecuta <code>sh recortar_jugadas.sh</code> en la terminal. Crea la carpeta <strong>jugadas</strong> con un vídeo por cada fila. Necesita ffmpeg instalado.</p>
+    <p class="hint" style="margin:0 10px 10px">El .bat va solo a la carpeta del vídeo (Marcador → Carpeta del vídeo): ábrelo con doble clic desde Descargas. Crea la carpeta <strong>jugadas</strong> con un clip por jugada, ya preparado para la web (720p) y con el nombre que la web entiende. Súbelos tal cual a la carpeta jugadas del repositorio. Necesita ffmpeg.</p>
   </div>
 </div>
 <header>
@@ -416,6 +432,22 @@ document.body.appendChild(d)})})();
   <p>¿Ha terminado el partido o hay prórroga?</p>
   <div class="acts"><button onclick="vOT(false)">Fin del partido</button><button class="go" id="vOTyes" onclick="vOT(true)">Hay prórroga</button></div>
 </div></div>
+<div class="v-modal" id="vJg"><div class="box jg">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap"><h3 id="vJgT">Nueva jugada</h3><span id="vJgM" style="font-size:13px;color:var(--muted)"></span></div>
+  <video id="vJgV" class="jg-vid" playsinline preload="auto" controls></video>
+  <div class="jg-tl" id="vJgTL" title="Pulsa para ir a ese momento"><div class="sel" id="vJgSel"></div><div class="ph" id="vJgPh"></div><span class="lb" id="vJgL0" style="left:6px"></span><span class="lb" id="vJgL1" style="right:6px"></span></div>
+  <div class="jg-tm">
+    <div class="g">Inicio <button onclick="jgNudge('a',-1)">−1</button><input id="vJgA" onchange="jgSetT('a',this.value)"><button onclick="jgNudge('a',1)">+1</button><button onclick="jgHere('a')" title="El clip empieza donde está el reproductor">⇤ aquí</button></div>
+    <div class="g">Fin <button onclick="jgNudge('b',-1)">−1</button><input id="vJgB" onchange="jgSetT('b',this.value)"><button onclick="jgNudge('b',1)">+1</button><button onclick="jgHere('b')" title="El clip acaba donde está el reproductor">aquí ⇥</button></div>
+    <div class="g">Duración <b id="vJgDur" style="color:var(--text)"></b></div>
+    <button onclick="jgPlay()" style="border-color:var(--accent);color:var(--accent)">▶ Ver clip</button>
+  </div>
+  <div><div class="jg-lbl">Jugadores (sin marcar = equipo)</div><div class="pl" id="vJgW"></div></div>
+  <div><div class="jg-lbl">Tipo de jugada</div><div class="pl" id="vJgK"></div>
+    <div style="display:flex;gap:6px;margin-top:8px"><input id="vJgNK" class="jg-desc" style="max-width:220px" placeholder="Otra palabra clave" onkeydown="if(event.key==='Enter')jgAddKw()"><button class="jg-sm" onclick="jgAddKw()">+ Añadir</button></div></div>
+  <div><div class="jg-lbl">Descripción (opcional)</div><input id="vJgD" class="jg-desc" maxlength="60" placeholder="Triple desde la esquina, contraataque…"></div>
+  <div class="acts"><button onclick="jgClose()">Cancelar</button><button id="vJgDel" onclick="jgDelete()" style="color:var(--red)">Borrar jugada</button><button class="go" onclick="jgSave()">Guardar jugada</button></div>
+</div></div>
 <div class="toast" id="toast"></div>
 <script>
 const DEFAULT_PLAYERS=['Carlos','Álvaro','Darío','Javi','Fran','Iggy','Nacho','Miguel','Manute','Dani'];
@@ -425,7 +457,7 @@ const SAVE_KEY='icaro_tracker_v2';const CFG_KEY='icaro_tracker_cfg';
 function freshState(){return{rival:'',date:'',temporada:'',partidoId:'',players:[],stats:{},times:{},editMode:{},
   courtPlayers:{q1:new Set(),q2:new Set(),q3:new Set(),q4:new Set(),q5:new Set()},ot:false,chg:null,
   opp:{q1:0,q2:0,q3:0,q4:0,q5:0},stints:[],curStint:{q1:null,q2:null,q3:null,q4:null,q5:null},sentAt:null,
-  vev:[],vmarks:{},vcfg:{qLen:12,prLen:3,tmLen:90},marks:[],bpos:[],sid:0,clips:[],ccfg:{pre:8,post:2,board:false,exact:true}}}
+  vev:[],vmarks:{},vcfg:{qLen:12,prLen:3,tmLen:90},marks:[],bpos:[],sid:0,clips:[],ccfg:{pre:5,post:5,board:true,v2:1}}}
 let state=freshState();
 let sheetData=null;
 
@@ -990,6 +1022,7 @@ function renderVList(){
   const el=document.getElementById('vList');if(!el)return;const n=vNames();
   const items=[];(state.vev||[]).forEach((e,i)=>items.push({t:e.t,ev:i}));
   (state.marks||[]).forEach((m,i)=>items.push({t:m.t,mark:i,del:`vDelMark(${i})`}));
+  (state.clips||[]).forEach((c,i)=>items.push({t:c.a,mk:'✂ Jugada · '+((Array.isArray(c.who)?c.who:(c.who?[c.who]:[])).join(', ')||'Equipo')+((c.kw||[]).length?' · '+c.kw.join(', '):''),del:`vClipDel(${i});renderVList()`}));
   (state.bpos||[]).forEach((x,i)=>items.push({t:x.t,mk:'Marcador → '+POS[x.pos][0],del:`vDelPos(${i})`}));
   const pg=document.getElementById('vPosG');if(pg&&!pg.children.length)pg.innerHTML=['tl','tc','tr','bl','bc','br'].map(k=>`<button type="button" data-p="${k}" title="Marcador ${POS[k][0]} desde este momento" onclick="vPos('${k}')"></button>`).join('');
   const ov=document.querySelector('.v-ov');if(ov)ov.dataset.pos='';
@@ -1132,12 +1165,13 @@ vid.addEventListener('error',()=>{if(vid.getAttribute('src'))showToast('❌ Este
 const V_RATES=[0.5,0.75,1,1.25,1.5,2,3];
 document.addEventListener('keydown',e=>{
   if(!document.body.classList.contains('has-video')||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(document.getElementById('vJg').classList.contains('on')){if(e.key==='Escape'){jgClose();e.preventDefault()}return}
   if(document.querySelector('.v-modal.on'))return;
   const tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.tagName==='SELECT'))return;
   const k=e.key;
   if(k===' '&&state.chg){showToast('⚠ Pulsa Confirmar cambios para seguir');e.preventDefault();return}
   if(k===' '){vStopAt=null;if(document.activeElement&&document.activeElement!==document.body)document.activeElement.blur();vid.paused?vid.play():vid.pause()}
-  else if(k==='j'||k==='J')vMarkPlay();
+  else if(k==='j'||k==='J')jgOpen();
   else if(k==='ArrowLeft')vid.currentTime=Math.max(0,vid.currentTime-5);
   else if(k==='ArrowRight')vid.currentTime=vid.currentTime+5;
   else if(k===','||k==='.'){let i=V_RATES.indexOf(vid.playbackRate);if(i<0)i=2;i=Math.min(V_RATES.length-1,Math.max(0,i+(k==='.'?1:-1)));vid.playbackRate=V_RATES[i];document.getElementById('vRate').textContent=String(V_RATES[i]).replace('.',',')+'×'}
@@ -1147,46 +1181,90 @@ document.addEventListener('keydown',e=>{
 
 /* ── JUGADAS (recortes) ── */
 let vStopAt=null;
-function cCfg(){return state.ccfg||(state.ccfg={pre:8,post:2,board:false,exact:true})}
+function cCfg(){const c=state.ccfg||(state.ccfg={pre:5,post:5,board:true});if(!c.v2){c.pre=5;c.post=5;c.board=true;c.v2=1}return c}
 function cFmt(t){t=Math.max(0,t);const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=Math.round((t%60)*10)/10;const ss=(s<10?'0':'')+(s%1===0?String(s):s.toFixed(1));return(h?h+':'+String(m).padStart(2,'0'):m)+':'+ss}
 function cParse(v){v=String(v).trim().replace(',','.');if(!v)return null;const p=v.split(':').map(Number);if(p.some(isNaN))return null;return p.reduce((a,x)=>a*60+x,0)}
 function vTab(k){document.getElementById('vPaneS').style.display=k==='s'?'flex':'none';document.getElementById('vPaneC').style.display=k==='c'?'flex':'none';
   document.getElementById('vTabS').classList.toggle('on',k==='s');document.getElementById('vTabC').classList.toggle('on',k==='c')}
 function vClipCfg(){const c=cCfg();c.pre=Math.max(0,+document.getElementById('cPre').value||0);c.post=Math.max(0,+document.getElementById('cPost').value||0);
-  c.board=document.getElementById('cBoard').checked;c.exact=document.getElementById('cExact').checked;touch()}
-function vClipAdd(manual){const t=vNow();if(t==null){showToast('⚠ Abre primero el vídeo');return}const c=cCfg();if(!state.clips)state.clips=[];
-  const dur=isFinite(vid.duration)?vid.duration:Infinity;
-  const a=manual?t:Math.max(0,t-c.pre),b=Math.min(dur,manual?t+10:t+c.post);
-  state.clips.push({a:Math.round(a*10)/10,b:Math.round(Math.max(b,a+1)*10)/10,who:'',note:''});touch();renderClips();
-  if(manual)vTab('c');showToast('✂ Jugada '+state.clips.length+' guardada ('+cFmt(a)+' – '+cFmt(b)+')')}
-function vClipSet(i,k,v){const cl=state.clips[i];if(!cl)return;
-  if(k==='a'||k==='b'){const t=cParse(v);if(t==null){showToast('⚠ Tiempo no válido. Usa min:seg, por ejemplo 12:34');renderClips();return}cl[k]=Math.round(t*10)/10;
-    if(cl.b<=cl.a){if(k==='a')cl.b=cl.a+1;else cl.a=Math.max(0,cl.b-1)}renderClips()}
-  else cl[k]=v;touch()}
+  c.board=document.getElementById('cBoard').checked;touch()}
+
+/* ── RECORTADOR DE JUGADAS (mini reproductor) ── */
+const JG_KWS=['jugada','bandeja','triple','media distancia','and 1','asistencia','tapón','robo','rebote','bocina','fail'];
+function jgKws(){let x=[];try{x=JSON.parse(localStorage.getItem('icaro:kws')||'[]')}catch(e){}return JG_KWS.concat(x.filter(k=>!JG_KWS.includes(k)))}
+let jg=null;const jgV=()=>document.getElementById('vJgV');
+function jgMatch(){const id=state.partidoId||'';const m=/^(\d{2})\/(\d{2})-(J|PO)(\d+)$/.exec(id);
+  return m?{slug:m[1]+m[2]+'-'+m[3]+String(+m[4]).padStart(2,'0'),txt:m[1]+'/'+m[2]+' · '+(m[3]==='J'?'Jornada '+(+m[4]):'Playoffs '+(+m[4]))}:null}
+function jgOpen(i){
+  if(!vid.getAttribute('src')){showToast('⚠ Abre primero el vídeo');return}
+  vid.pause();const dur=isFinite(vid.duration)?vid.duration:Infinity;const c=cCfg();
+  if(i==null){const t=vid.currentTime;jg={i:null,a:Math.max(0,t-c.pre),b:Math.min(dur,t+c.post),who:[],kw:[],desc:''}}
+  else{const cl=state.clips[i];jg={i,a:cl.a,b:cl.b,who:(Array.isArray(cl.who)?cl.who:(cl.who?[cl.who]:[])).slice(),kw:(cl.kw||[]).slice(),desc:cl.desc||cl.note||''}}
+  jg.w0=Math.max(0,jg.a-15);jg.w1=Math.min(dur,jg.b+15);
+  const v=jgV();if(v.src!==vid.src)v.src=vid.src;v.currentTime=jg.a;
+  const mt=jgMatch();document.getElementById('vJgM').innerHTML=mt?mt.txt+(state.rival?' · vs '+state.rival:''):'<span style="color:var(--yellow)">⚠ Elige el partido en Setup para que el clip lleve la jornada</span>';
+  document.getElementById('vJgT').textContent=i==null?'Nueva jugada':'Editar jugada';document.getElementById('vJgDel').style.display=i==null?'none':'';
+  document.getElementById('vJgD').value=jg.desc;
+  document.getElementById('vJg').classList.add('on');jgRender();setTimeout(()=>{v.play().catch(()=>{})},60)}
+function jgClose(){jgV().pause();document.getElementById('vJg').classList.remove('on');jg=null}
+function jgRender(){if(!jg)return;
+  document.getElementById('vJgA').value=cFmt(jg.a);document.getElementById('vJgB').value=cFmt(jg.b);
+  document.getElementById('vJgDur').textContent=String(Math.round((jg.b-jg.a)*10)/10).replace('.',',')+' s';
+  const W=jg.w1-jg.w0||1,pc=t=>((t-jg.w0)/W*100)+'%';const sel=document.getElementById('vJgSel');sel.style.left=pc(jg.a);sel.style.width=((jg.b-jg.a)/W*100)+'%';
+  document.getElementById('vJgL0').textContent=cFmt(jg.w0);document.getElementById('vJgL1').textContent=cFmt(jg.w1);jgPh();
+  const q=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  document.getElementById('vJgW').innerHTML=activePlayers().map(p=>`<button type="button" class="${jg.who.includes(p)?'on':''}" data-w="${q(p)}">${q(p)}</button>`).join('')||'<span style="color:var(--muted);font-size:13px">Pon los convocados en Setup</span>';
+  document.getElementById('vJgK').innerHTML=jgKws().map(k=>`<button type="button" class="${jg.kw.includes(k)?'on':''}" data-k="${q(k)}">${q(k)}</button>`).join('')}
+function jgPh(){if(!jg)return;const v=jgV(),W=jg.w1-jg.w0||1;document.getElementById('vJgPh').style.left=((Math.min(jg.w1,Math.max(jg.w0,v.currentTime))-jg.w0)/W*100)+'%'}
+function jgFix(){const dur=isFinite(vid.duration)?vid.duration:Infinity;jg.a=Math.max(0,Math.round(jg.a*10)/10);jg.b=Math.min(dur,Math.round(jg.b*10)/10);
+  if(jg.b<=jg.a+0.5)jg.b=jg.a+0.5;if(jg.a<jg.w0)jg.w0=Math.max(0,jg.a-5);if(jg.b>jg.w1)jg.w1=Math.min(dur,jg.b+5)}
+function jgNudge(k,d){jg[k]+=d;jgFix();jgV().currentTime=jg[k];jgRender()}
+function jgSetT(k,v){const t=cParse(v);if(t==null){showToast('⚠ Tiempo no válido. Usa min:seg, por ejemplo 12:34');jgRender();return}jg[k]=t;jgFix();jgV().currentTime=jg[k];jgRender()}
+function jgHere(k){jg[k]=jgV().currentTime;if(k==='a'&&jg.b<=jg.a)jg.b=jg.a+5;if(k==='b'&&jg.b<=jg.a)jg.a=Math.max(0,jg.b-5);jgFix();jgRender()}
+function jgPlay(){const v=jgV();v.currentTime=jg.a;v.play().catch(()=>{})}
+function jgAddKw(){const i=document.getElementById('vJgNK');const k=i.value.trim().toLowerCase();if(!k)return;let x=[];try{x=JSON.parse(localStorage.getItem('icaro:kws')||'[]')}catch(e){}
+  if(!JG_KWS.includes(k)&&!x.includes(k)){x.push(k);try{localStorage.setItem('icaro:kws',JSON.stringify(x))}catch(e){}}if(!jg.kw.includes(k))jg.kw.push(k);i.value='';jgRender()}
+function jgSave(){if(!jg)return;const cl={a:jg.a,b:jg.b,who:jg.who.slice(),kw:jg.kw.slice(),desc:document.getElementById('vJgD').value.trim()};
+  if(!state.clips)state.clips=[];if(jg.i==null)state.clips.push(cl);else state.clips[jg.i]=cl;state.clips.sort((x,y)=>x.a-y.a);
+  const n=state.clips.length;touch();jgClose();renderClips();renderVList();showToast('✂ Jugada guardada ('+n+' en total)')}
+function jgDelete(){if(!jg||jg.i==null)return;state.clips.splice(jg.i,1);touch();jgClose();renderClips();renderVList();showToast('Jugada borrada')}
+(function(){const v=document.getElementById('vJgV');
+  v.addEventListener('timeupdate',()=>{if(!jg)return;jgPh();if(v.currentTime>=jg.b&&!v.paused){v.pause();v.currentTime=jg.b}});
+  document.getElementById('vJgTL').addEventListener('click',e=>{if(!jg)return;const r=e.currentTarget.getBoundingClientRect();v.currentTime=jg.w0+(e.clientX-r.left)/r.width*(jg.w1-jg.w0);jgPh()});
+  document.getElementById('vJgW').addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(!b||!jg)return;const p=b.dataset.w;jg.who=jg.who.includes(p)?jg.who.filter(x=>x!==p):jg.who.concat(p);jgRender()});
+  document.getElementById('vJgK').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b||!jg)return;const k=b.dataset.k;jg.kw=jg.kw.includes(k)?jg.kw.filter(x=>x!==k):jg.kw.concat(k);jgRender()});
+  document.getElementById('vJg').addEventListener('click',e=>{if(e.target.id==='vJg')jgClose()})})();
+
 function vClipDel(i){state.clips.splice(i,1);touch();renderClips()}
 function vClipPlay(i){const cl=state.clips[i];if(!cl)return;vid.currentTime=cl.a;vStopAt=cl.b;vid.play()}
+function clipWho(cl){return Array.isArray(cl.who)?cl.who:(cl.who?[cl.who]:[])}
 function renderClips(){const el=document.getElementById('vClips');if(!el)return;const cs=state.clips||[];const c=cCfg();
-  document.getElementById('cPre').value=c.pre;document.getElementById('cPost').value=c.post;document.getElementById('cBoard').checked=!!c.board;document.getElementById('cExact').checked=c.exact!==false;
+  document.getElementById('cPre').value=c.pre;document.getElementById('cPost').value=c.post;document.getElementById('cBoard').checked=!!c.board;
   document.getElementById('vClipN').textContent=cs.length?'('+cs.length+')':'';
-  const opts=w=>'<option value="">Equipo</option>'+activePlayers().map(p=>`<option ${p===w?'selected':''}>${p}</option>`).join('');
   const q=s=>String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-  el.innerHTML=cs.length?cs.map((cl,i)=>`<div class="c-row"><button class="cp" onclick="vClipPlay(${i})" title="Ver la jugada">▶</button>
-    <input value="${cFmt(cl.a)}" onchange="vClipSet(${i},'a',this.value)" aria-label="Inicio"><input value="${cFmt(cl.b)}" onchange="vClipSet(${i},'b',this.value)" aria-label="Fin">
-    <select onchange="vClipSet(${i},'who',this.value)" aria-label="Jugador">${opts(cl.who)}</select>
-    <input value="${q(cl.note)}" placeholder="Triple, tapón, pase…" onchange="vClipSet(${i},'note',this.value)" aria-label="Nota">
-    <button class="vx" onclick="vClipDel(${i})" title="Borrar">✕</button></div>`).join('')
-    :'<div class="v-row" style="grid-template-columns:1fr"><span class="mk">Cuando veas una jugada que te guste, pulsa ✂ Jugada (o la tecla J) justo después: se guardan los segundos anteriores. Luego puedes ajustar el inicio y el fin, poner de quién es y una nota. También puedes escribir los tiempos a mano.</span></div>'}
-function cSlug(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,30)}
+  el.innerHTML=cs.length?cs.map((cl,i)=>`<div class="jg-row"><button class="cp" onclick="vClipPlay(${i})" title="Ver la jugada en el vídeo">▶</button>
+    <span class="tt">${cFmt(cl.a)} – ${cFmt(cl.b)}</span>
+    <span><span class="who">${q(clipWho(cl).join(', ')||'Equipo')}</span>${cl.desc||cl.note?' · '+q(cl.desc||cl.note):''}<br>${(cl.kw||[]).map(k=>`<span class="kw">${q(k)}</span>`).join('')}</span>
+    <button class="ed" onclick="jgOpen(${i})" title="Editar">✎</button><button class="vx" onclick="vClipDel(${i})" title="Borrar">✕</button></div>`).join('')
+    :'<div class="v-row" style="grid-template-columns:1fr"><span class="mk">Cuando veas una jugada que te guste, pulsa ⭐ Jugada (o la tecla J): se abre el recortador con 5 s antes y 5 s después. Ajusta el inicio y el fin, marca jugadores y tipo de jugada, y guárdala.</span></div>'}
+function jgSlug(s,lower){const r=String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'');return lower?r.toLowerCase():r}
+function clipFile(cl,n,mt){const who=clipWho(cl).map(w=>jgSlug(w,false)).filter(Boolean).join('_')||'Equipo';
+  const kw=(cl.kw||[]).map(k=>jgSlug(k,true)).filter(Boolean).join('_')||'sin-clave';
+  return [mt.slug,who,kw,jgSlug(cl.desc||cl.note,true).slice(0,50)||'jugada',String(n).padStart(2,'0')].join('__')+'.mp4'}
 function vClipScript(kind){const cs=(state.clips||[]).slice().sort((x,y)=>x.a-y.a);if(!cs.length){showToast('⚠ No hay jugadas guardadas');return}
-  const c=cCfg();const base=vName||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base;const src=c.board?stem+'_marcador.mp4':base;
-  const enc=c.exact!==false?'-c:v libx264 -preset veryfast -crf 20 -c:a aac':'-c copy';
-  const cmds=cs.map((cl,i)=>{const mm=Math.floor(cl.a/60),ss=Math.floor(cl.a%60);
-    const name=[String(i+1).padStart(2,'0'),cSlug(cl.who)||'Equipo',cSlug(cl.note),String(mm).padStart(2,'0')+'m'+String(ss).padStart(2,'0')+'s'].filter(Boolean).join('_')+'.mp4';
-    return `ffmpeg -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${src}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "jugadas/${name}"`});
+  const mt=jgMatch();if(!mt){showToast('⚠ Elige el partido en Setup: el nombre de cada clip lleva la jornada');return}
+  const c=cCfg();const base=vName||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base,board=stem+'_marcador.mp4';
+  const enc='-vf "scale=-2:\'min(720,ih)\'" -c:v libx264 -preset veryfast -crf 26 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart';
+  const SRC='@@SRC@@';
+  const cmds=cs.map((cl,i)=>`ffmpeg -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${SRC}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "jugadas/${clipFile(cl,i+1,mt)}"`);
   let txt,file;
-  if(kind==='bat'){file='recortar_jugadas.bat';txt=['@echo off','chcp 65001 >nul',`cd /d "${dirs().vid.replace(/%/g,'%%')}"`,'if not exist jugadas mkdir jugadas',`echo Recortando ${cs.length} jugadas de ${src.replace(/%/g,'%%')}...`]
-    .concat(cmds.map(x=>x.replace(/%/g,'%%'))).concat(['echo Listo: mira la carpeta jugadas.','pause']).join('\r\n')+'\r\n'}
-  else{file='recortar_jugadas.sh';txt=['#!/bin/sh','cd "$(dirname "$0")"','mkdir -p jugadas',`echo "Recortando ${cs.length} jugadas..."`].concat(cmds.map(x=>x.replace(/\$/g,'\\$').replace(/`/g,'\\`'))).concat(['echo "Listo: mira la carpeta jugadas."']).join('\n')+'\n'}
+  if(kind==='bat'){file='recortar_jugadas.bat';const e=x=>x.replace(/%/g,'%%');
+    txt=['@echo off','chcp 65001 >nul',`cd /d "${e(dirs().vid)}"`,`set "SRC=${e(base)}"`].concat(c.board?[`if exist "${e(board)}" set "SRC=${e(board)}"`]:[])
+      .concat(['if not exist "%SRC%" (echo No encuentro el video %SRC% en esta carpeta: '+e(dirs().vid)+'& pause & exit /b)','if not exist jugadas mkdir jugadas',`echo Recortando ${cs.length} jugadas de %SRC%...`])
+      .concat(cmds.map(x=>e(x).split(SRC).join('%SRC%'))).concat(['echo Listo: sube los videos de la carpeta jugadas a la carpeta jugadas de la web.','pause']).join('\r\n')+'\r\n'}
+  else{file='recortar_jugadas.sh';const e=x=>x.replace(/\$/g,'\\$').replace(/`/g,'\\`');
+    txt=['#!/bin/sh','cd "$(dirname "$0")"',`SRC="${e(base)}"`].concat(c.board?[`[ -f "${e(board)}" ] && SRC="${e(board)}"`]:[]).concat(['mkdir -p jugadas',`echo "Recortando ${cs.length} jugadas de $SRC..."`])
+      .concat(cmds.map(x=>e(x).split(SRC).join('$SRC'))).concat(['echo "Listo: mira la carpeta jugadas."']).join('\n')+'\n'}
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download=file;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);showToast('✓ '+file+' descargado')}
 

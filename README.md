@@ -19,7 +19,7 @@ Tiene dos versiones, **Básico** (pensada para el móvil) y **Completo**, que se
 
 - Es una web estática alojada en GitHub Pages.
 - Los datos están en un Google Sheet. Un script de Google Apps Script hace de puente: la web lee los datos a través de él y le envía las respuestas de asistencia.
-- Los partidos se apuntan viendo el vídeo con una herramienta propia, que envía las estadísticas al Sheet. Esta herramienta y la de recortar jugadas solo están disponibles para quien lleva las estadísticas.
+- Los partidos se apuntan viendo el vídeo con una herramienta propia, que envía las estadísticas al Sheet. La misma herramienta sirve para recortar las mejores jugadas. Solo está disponible para quien lleva las estadísticas.
 - La web calcula las medias, récords, quintetos y roles en el navegador a partir de los datos en bruto.
 
 ## Contenido del repositorio
@@ -28,7 +28,7 @@ Tiene dos versiones, **Básico** (pensada para el móvil) y **Completo**, que se
 |---|---|
 | `index.html`, `assets/` | La web: estilos, carga de datos, cálculos y páginas |
 | `config.js` | Dirección del script de Google que da los datos |
-| `herramientas/` | Herramientas para apuntar partidos y recortar jugadas |
+| `herramientas/` | Herramienta para apuntar partidos y recortar jugadas |
 | `jugadas/` | Clips de vídeo de las jugadas |
 | `backend/` | Código del script de Google Apps Script |
 | `datos-ejemplo.json` | Copia de datos para ver la web sin conexión al Sheet |
