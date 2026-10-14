@@ -417,6 +417,7 @@ document.body.appendChild(d)})})();
       <p>Escribe el box score por cuarto, los quintetos y el resultado en el Google Sheet. Si ya lo enviaste, se sustituye lo anterior de este partido.</p>
       <ul class="checklist" id="exportChecklist"></ul>
       <button class="btn-send" id="sendBtn" onclick="sendToSheet()">⬆ Enviar al Sheet</button>
+      <button class="btn-export secondary" onclick="videoOnly()" title="Descarga el marcador y prepara el comando de marcador + jugadas, sin enviar nada al Sheet">🎬 Solo marcador y jugadas (sin enviar)</button>
       <button class="btn-export secondary" onclick="exportExcel()">⬇ Descargar Excel (copia de seguridad)</button>
       <div class="send-log" id="sendLog"></div>
     </div>
@@ -918,6 +919,11 @@ async function sendToSheet(){
   finally{btn.disabled=false;btn.textContent='⬆ Enviar al Sheet'}
 }
 
+function videoOnly(){const log=document.getElementById('sendLog');
+  if(!vid.getAttribute('src')){showToast('⚠ Abre primero el vídeo');return}
+  const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;if(!hasBoard&&!(state.clips||[]).length){showToast('⚠ No hay marcador ni jugadas en este vídeo');return}
+  if((state.clips||[]).length&&!jgMatch()){showToast('⚠ Elige el partido en Setup: los clips llevan la jornada en el nombre');return}
+  log.innerHTML='Prueba: no se ha enviado nada al Sheet.';afterSend(log)}
 function afterSend(log){
   if(!vid.getAttribute('src'))return;const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;const nC=(state.clips||[]).length;
   if(!hasBoard&&!nC)return;
