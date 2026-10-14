@@ -1277,7 +1277,7 @@ function vClipScript(kind){const cs=(state.clips||[]).slice().sort((x,y)=>x.a-y.
   const c=cCfg();const base=vName||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base,board=stem+'_marcador.mp4';
   const enc='-vf "scale=-2:\'min(720,ih)\'" -c:v libx264 -preset veryfast -crf 26 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart';
   const SRC='@@SRC@@';
-  const cmds=cs.map((cl,i)=>`ffmpeg -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${SRC}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "jugadas/${clipFile(cl,i+1,mt)}"`);
+  const cmds=cs.map((cl,i)=>`ffmpeg -nostdin -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${SRC}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "jugadas/${clipFile(cl,i+1,mt)}"`);
   let txt,file;
   if(kind==='bat'){file='recortar_jugadas.bat';const e=x=>x.replace(/%/g,'%%');
     txt=['@echo off','chcp 65001 >nul',`cd /d "${e(dirs().vid)}"`,`set "SRC=${e(base)}"`].concat(c.board?[`if exist "${e(board)}" set "SRC=${e(board)}"`]:[])
@@ -1328,12 +1328,12 @@ function assParts(){const d=dirs();const base=vName||'partido.mp4',dot=base.last
   // dentro del filtro de ffmpeg: barras normales y los dos puntos de la unidad escapados (C\:/...)
   const assF=(d.ass.replace(/\\/g,'/')+'/'+assName()).replace(/^([A-Za-z]):/,'$1\\:').replace(/'/g,"\\'");
   return{inp:win(d.vid)+'\\'+base,out:win(d.vid)+'\\'+stem+'_marcador.mp4',assF,assWin:win(d.ass)+'\\'+assName(),dir:win(d.vid)}}
-function assCmd(){const p=assParts();return `ffmpeg -y -i "${p.inp}" -vf "ass='${p.assF}'" -c:a copy "${p.out}"`}
+function assCmd(){const p=assParts();return `ffmpeg -nostdin -y -i "${p.inp}" -vf "ass='${p.assF}'" -c:a copy "${p.out}"`}
 /* Todo en uno para pegar en la terminal (cmd o PowerShell): primero incrusta el marcador y,
    cuando acaba, recorta cada jugada de ese vídeo con marcador. Rutas completas: no hay que mover nada. */
 function clipCmds(src){const cs=(state.clips||[]).slice().sort((x,y)=>x.a-y.a);const mt=jgMatch();if(!cs.length||!mt)return[];const p=assParts();
   const enc='-vf "scale=-2:\'min(720,ih)\'" -c:v libx264 -preset veryfast -crf 26 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart';
-  return [`mkdir "${p.dir}\\jugadas"`].concat(cs.map((cl,i)=>`ffmpeg -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${src}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "${p.dir}\\jugadas\\${clipFile(cl,i+1,mt)}"`))}
+  return [`mkdir "${p.dir}\\jugadas"`].concat(cs.map((cl,i)=>`ffmpeg -nostdin -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${src}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "${p.dir}\\jugadas\\${clipFile(cl,i+1,mt)}"`))}
 function allCmd(){const p=assParts();const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;
   const lines=hasBoard?[assCmd()]:[];return lines.concat(clipCmds(hasBoard?p.out:p.inp)).join('\n')}
 function copyAll(){const t=allCmd();if(!t){showToast('⚠ No hay marcador ni jugadas que preparar');return}
