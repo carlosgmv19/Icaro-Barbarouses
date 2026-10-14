@@ -328,6 +328,7 @@ document.body.appendChild(d)})})();
   <div class="v-list" id="vList"></div>
   <div class="v-exp">
     <button onclick="vExportAss()">⬇ Descargar marcador (.ass)</button>
+    <button onclick="vTabSend()" style="border-color:var(--green);color:var(--green)" title="Descarga el marcador y prepara el comando de marcador + jugadas, sin enviar nada al Sheet">🎬 Preparar marcador + jugadas (sin enviar)</button>
     <button onclick="vCopyCmd()" title="Incrusta el marcador y después recorta las jugadas del vídeo con marcador. Se pega tal cual en la terminal">📋 Copiar comando (marcador + jugadas)</button>
     <button onclick="vAssBat()" title="Archivo para hacer doble clic: incrusta el marcador sin abrir la terminal">⬇ Incrustar marcador (.bat)</button>
     <button onclick="vClipScript('bat')" title="Un clip por cada jugada guardada con ⭐ Jugada" style="border-color:var(--accent);color:var(--accent)">✂ Recortar jugadas (.bat) <span id="vClipN2"></span></button>
@@ -919,6 +920,7 @@ async function sendToSheet(){
   finally{btn.disabled=false;btn.textContent='⬆ Enviar al Sheet'}
 }
 
+function vTabSend(){const t=document.querySelector('.tab[data-tab="export"]');if(t)t.click();videoOnly()}
 function videoOnly(){const log=document.getElementById('sendLog');
   if(!vid.getAttribute('src')){showToast('⚠ Abre primero el vídeo');return}
   const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;if(!hasBoard&&!(state.clips||[]).length){showToast('⚠ No hay marcador ni jugadas en este vídeo');return}
