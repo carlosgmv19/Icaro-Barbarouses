@@ -328,7 +328,7 @@ document.body.appendChild(d)})})();
   <div class="v-list" id="vList"></div>
   <div class="v-exp">
     <button onclick="vExportAss()">⬇ Descargar marcador (.ass)</button>
-    <button onclick="vCopyCmd()">Copiar comando ffmpeg</button>
+    <button onclick="vCopyCmd()" title="Incrusta el marcador y después recorta las jugadas del vídeo con marcador. Se pega tal cual en la terminal">📋 Copiar comando (marcador + jugadas)</button>
     <button onclick="vAssBat()" title="Archivo para hacer doble clic: incrusta el marcador sin abrir la terminal">⬇ Incrustar marcador (.bat)</button>
     <button onclick="vClipScript('bat')" title="Un clip por cada jugada guardada con ⭐ Jugada" style="border-color:var(--accent);color:var(--accent)">✂ Recortar jugadas (.bat) <span id="vClipN2"></span></button>
     <button onclick="vClose()">✕ Cerrar vídeo</button>
@@ -912,11 +912,23 @@ async function sendToSheet(){
     if(!j.ok)throw new Error(j.error||'Error');
     state.sentAt=new Date().toISOString();touch();saveNow();
     log.innerHTML=`✓ Enviado ${new Date().toLocaleTimeString('es-ES')}: ${j.box} filas de box score y ${j.quintetos} tramos de quinteto. Resultado ${p.partido.PF}–${p.partido.PC}.`;
+    afterSend(log);
     showToast('✓ Enviado al Sheet')
   }catch(e){log.innerHTML='❌ No se pudo enviar: '+e.message+(/PIN/.test(e.message)?'':'. Revisa la URL y la conexión, o descarga el Excel como copia.');showToast('❌ Error al enviar');console.error(e)}
   finally{btn.disabled=false;btn.textContent='⬆ Enviar al Sheet'}
 }
 
+function afterSend(log){
+  if(!vid.getAttribute('src'))return;const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;const nC=(state.clips||[]).length;
+  if(!hasBoard&&!nC)return;
+  if(hasBoard)vExportAss();
+  const cmd=allCmd();const q=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  log.innerHTML+=`<div style="margin-top:12px;padding:12px;border:1px solid var(--accent);border-radius:8px;background:rgba(249,115,22,.06)">
+    <div style="font-weight:700;margin-bottom:6px">Vídeo con marcador${nC?' y '+nC+' jugadas':''}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${hasBoard?'Ya se ha descargado <b>'+assName()+'</b> en Descargas. ':''}Copia el comando, pégalo en la terminal (cmd o PowerShell) y pulsa Enter.${hasBoard&&nC?' Primero incrusta el marcador y, cuando acaba, recorta las jugadas de ese vídeo con marcador.':''} Los clips quedan en la carpeta <b>jugadas</b> junto al vídeo.</div>
+    <button class="btn-sec" style="margin:0 0 8px" onclick="copyAll()">📋 Copiar comando</button>
+    <pre style="margin:0;white-space:pre-wrap;word-break:break-all;font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--muted);max-height:160px;overflow:auto">${q(cmd)}</pre></div>`;
+  (navigator.clipboard?navigator.clipboard.writeText(cmd):Promise.reject()).then(()=>showToast('✓ Enviado. Comando copiado: pégalo en la terminal'),()=>{})}
 function buildSheetData(){
   const players=activePlayers();
   const hdr=['nombre','MIN','PTS','REBD','REBO','AST','STL','BLK','TOV','+','-','+/-','FGM','FGA','%FG','3PM','3PA','%3P','FTM','FTA','%FT','EFF','VAL','IMPFIN','EFF_norm','VAL_norm','','S','TM','TM','F'];
@@ -1042,7 +1054,7 @@ function renderVList(){
   const w=document.getElementById('vWarn');const bad=(state.vev||[]).length&&(h!==us||a!==them);
   w.style.display=bad?'block':'none';if(bad)w.textContent=`⚠ El marcador del vídeo acaba ${h}–${a} y el del partido va ${us}–${them}. Revisa la lista: alguna canasta se apuntó sin el vídeo abierto o se corrigió a mano.`;
   const base=vName||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base;
-  vFillDirs();document.getElementById('vCmd').textContent=assCmd();
+  vFillDirs();document.getElementById('vCmd').textContent=allCmd()||assCmd();
   vSig='';paintBoard()
 }
 function vSeek(t){vid.currentTime=Math.max(0,t-3)}
@@ -1293,8 +1305,9 @@ function buildAss(){
     if(x!==cur){if(t-from>=0.01)out.push('Dialogue: 0,'+assTime(from)+','+assTime(t)+',Marcador,,0,0,0,,'+cur);from=t;cur=x}}
   return out.join('\n')+'\n'}
 function vExportAss(){if(!(state.vev||[]).length&&vMark('q1').s==null){showToast('⚠ Aún no hay nada marcado en el vídeo');return}
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buildAss()],{type:'text/plain;charset=utf-8'}));a.download='marcador.ass';
-  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);showToast('✓ marcador.ass descargado')}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buildAss()],{type:'text/plain;charset=utf-8'}));a.download=assName();
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);showToast('✓ '+assName()+' descargado en Descargas')}
+function assName(){return 'marcador_'+((state.partidoId||'partido').replace(/[^A-Za-z0-9-]+/g,''))+'.ass'}
 /* rutas para el comando del marcador (se recuerdan en este navegador) */
 const DIR_DEF={vid:'C:\\Users\\carlo\\Desktop\\Basket_Icaro\\SEASON 26-27',ass:'C:\\Users\\carlo\\Downloads'};
 function dirs(){const c=cfg();return{vid:(c.dirVid||DIR_DEF.vid),ass:(c.dirAss||DIR_DEF.ass)}}
@@ -1305,9 +1318,18 @@ function vFillDirs(){const d=dirs();const a=document.getElementById('dirVid'),b=
 function assParts(){const d=dirs();const base=vName||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base;
   const win=v=>v.replace(/\//g,'\\');
   // dentro del filtro de ffmpeg: barras normales y los dos puntos de la unidad escapados (C\:/...)
-  const assF=(d.ass.replace(/\\/g,'/')+'/marcador.ass').replace(/^([A-Za-z]):/,'$1\\:').replace(/'/g,"\\'");
-  return{inp:win(d.vid)+'\\'+base,out:win(d.vid)+'\\'+stem+'_marcador.mp4',assF,assWin:win(d.ass)+'\\marcador.ass'}}
-function assCmd(){const p=assParts();return `ffmpeg -i "${p.inp}" -vf "ass='${p.assF}'" -c:a copy "${p.out}"`}
+  const assF=(d.ass.replace(/\\/g,'/')+'/'+assName()).replace(/^([A-Za-z]):/,'$1\\:').replace(/'/g,"\\'");
+  return{inp:win(d.vid)+'\\'+base,out:win(d.vid)+'\\'+stem+'_marcador.mp4',assF,assWin:win(d.ass)+'\\'+assName(),dir:win(d.vid)}}
+function assCmd(){const p=assParts();return `ffmpeg -y -i "${p.inp}" -vf "ass='${p.assF}'" -c:a copy "${p.out}"`}
+/* Todo en uno para pegar en la terminal (cmd o PowerShell): primero incrusta el marcador y,
+   cuando acaba, recorta cada jugada de ese vídeo con marcador. Rutas completas: no hay que mover nada. */
+function clipCmds(src){const cs=(state.clips||[]).slice().sort((x,y)=>x.a-y.a);const mt=jgMatch();if(!cs.length||!mt)return[];const p=assParts();
+  const enc='-vf "scale=-2:\'min(720,ih)\'" -c:v libx264 -preset veryfast -crf 26 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart';
+  return [`mkdir "${p.dir}\\jugadas"`].concat(cs.map((cl,i)=>`ffmpeg -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${src}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "${p.dir}\\jugadas\\${clipFile(cl,i+1,mt)}"`))}
+function allCmd(){const p=assParts();const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;
+  const lines=hasBoard?[assCmd()]:[];return lines.concat(clipCmds(hasBoard?p.out:p.inp)).join('\n')}
+function copyAll(){const t=allCmd();if(!t){showToast('⚠ No hay marcador ni jugadas que preparar');return}
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast('✓ Comando copiado: pégalo en la terminal'),()=>showToast('Selecciónalo y cópialo a mano'))}
 function vAssBat(){const p=assParts();const pc=x=>x.replace(/%/g,'%%');
   const txt=['@echo off','chcp 65001 >nul',
     `if not exist "${pc(p.inp)}" (echo No encuentro el video: ${pc(p.inp)}& pause & exit /b)`,
@@ -1317,7 +1339,7 @@ function vAssBat(){const p=assParts();const pc=x=>x.replace(/%/g,'%%');
     `echo Listo: ${pc(p.out)}`,'pause'].join('\r\n')+'\r\n';
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download='incrustar_marcador.bat';
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);showToast('✓ incrustar_marcador.bat descargado: haz doble clic en él')}
-function vCopyCmd(){const t=document.getElementById('vCmd').textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast('✓ Comando copiado'),()=>showToast('Selecciónalo y cópialo a mano'))}
+function vCopyCmd(){const t=allCmd()||assCmd();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast('✓ Comando copiado'),()=>showToast('Selecciónalo y cópialo a mano'))}
 
 /* minutos de cada quinteto y jugador a partir del reloj del vídeo */
 function minsFromVideo(){
