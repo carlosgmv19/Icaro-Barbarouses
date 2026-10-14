@@ -323,13 +323,14 @@ document.body.appendChild(d)})})();
   </div>
   <div id="vChgBar"></div>
   <div class="v-warn" id="vWarn"></div>
- <div class="v-tabs" style="display:none"><button id="vTabS" class="on" onclick="vTab('s')">Marcador</button><button id="vTabC" onclick="vTab('c')">✂ Jugadas <span id="vClipN"></span></button></div>
+ <div class="v-tabs"><button id="vTabS" class="on" onclick="vTab('s')">Marcador</button><button id="vTabC" onclick="vTab('c')">✂ Jugadas <span id="vClipN"></span></button></div>
   <div class="v-pane" id="vPaneS">
   <div class="v-list" id="vList"></div>
   <div class="v-exp">
     <button onclick="vExportAss()">⬇ Descargar marcador (.ass)</button>
     <button onclick="vCopyCmd()">Copiar comando ffmpeg</button>
     <button onclick="vAssBat()" title="Archivo para hacer doble clic: incrusta el marcador sin abrir la terminal">⬇ Incrustar marcador (.bat)</button>
+    <button onclick="vClipScript('bat')" title="Un clip por cada jugada guardada con ⭐ Jugada" style="border-color:var(--accent);color:var(--accent)">✂ Recortar jugadas (.bat) <span id="vClipN2"></span></button>
     <button onclick="vClose()">✕ Cerrar vídeo</button>
   </div>
   <div class="v-dirs">
@@ -1240,7 +1241,7 @@ function vClipPlay(i){const cl=state.clips[i];if(!cl)return;vid.currentTime=cl.a
 function clipWho(cl){return Array.isArray(cl.who)?cl.who:(cl.who?[cl.who]:[])}
 function renderClips(){const el=document.getElementById('vClips');if(!el)return;const cs=state.clips||[];const c=cCfg();
   document.getElementById('cPre').value=c.pre;document.getElementById('cPost').value=c.post;document.getElementById('cBoard').checked=!!c.board;
-  document.getElementById('vClipN').textContent=cs.length?'('+cs.length+')':'';
+  document.getElementById('vClipN').textContent=cs.length?'('+cs.length+')':'';const n2=document.getElementById('vClipN2');if(n2)n2.textContent=cs.length?'('+cs.length+')':'';
   const q=s=>String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   el.innerHTML=cs.length?cs.map((cl,i)=>`<div class="jg-row"><button class="cp" onclick="vClipPlay(${i})" title="Ver la jugada en el vídeo">▶</button>
     <span class="tt">${cFmt(cl.a)} – ${cFmt(cl.b)}</span>
