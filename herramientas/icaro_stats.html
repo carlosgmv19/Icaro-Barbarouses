@@ -329,7 +329,7 @@ document.body.appendChild(d)})})();
   <div class="v-exp">
     <button onclick="vExportAss()">⬇ Descargar marcador (.ass)</button>
     <button onclick="vTabSend()" style="border-color:var(--green);color:var(--green)" title="Descarga el marcador y prepara el comando de marcador + jugadas, sin enviar nada al Sheet">🎬 Preparar marcador + jugadas (sin enviar)</button>
-    <button onclick="vCopyCmd()" title="Incrusta el marcador y después recorta las jugadas del vídeo con marcador. Se pega tal cual en la terminal">📋 Copiar comando (marcador + jugadas)</button>
+    <button onclick="vCopyCmd()" title="Saca las jugadas con su marcador y después crea el vídeo entero con marcador. Se pega tal cual en la terminal">📋 Copiar comando (jugadas + marcador)</button>
     <button onclick="vAssBat()" title="Archivo para hacer doble clic: incrusta el marcador sin abrir la terminal">⬇ Incrustar marcador (.bat)</button>
     <button onclick="vClipScript('bat')" title="Un clip por cada jugada guardada con ⭐ Jugada" style="border-color:var(--accent);color:var(--accent)">✂ Recortar jugadas (.bat) <span id="vClipN2"></span></button>
     <button onclick="vClose()">✕ Cerrar vídeo</button>
@@ -347,13 +347,13 @@ document.body.appendChild(d)})})();
     </div>
     <div class="v-list" id="vClips"></div>
     <div class="c-opts">
-      <label><input type="checkbox" id="cBoard" onchange="vClipCfg()"> Recortar del vídeo con marcador si existe (…_marcador.mp4)</label>
+      <label><input type="checkbox" id="cBoard" onchange="vClipCfg()"> Poner el marcador en las jugadas</label>
     </div>
     <div class="v-exp">
       <button onclick="vClipScript('bat')">⬇ Recortar en Windows (.bat)</button>
       <button onclick="vClipScript('sh')">⬇ Recortar en Mac/Linux (.sh)</button>
     </div>
-    <p class="hint" style="margin:0 10px 10px">El .bat va solo a la carpeta del vídeo (Marcador → Carpeta del vídeo): ábrelo con doble clic desde Descargas. Crea la carpeta <strong>jugadas</strong> con un clip por jugada, ya preparado para la web (720p) y con el nombre que la web entiende. Súbelos tal cual a la carpeta jugadas del repositorio. Necesita ffmpeg.</p>
+    <p class="hint" style="margin:0 10px 10px">El .bat va solo a la carpeta del vídeo (Marcador → Carpeta del vídeo): ábrelo con doble clic desde Descargas. Crea la carpeta <strong>jugadas</strong> con un clip por jugada, con el marcador pintado, en la calidad del vídeo original y con el nombre que la web entiende. Súbelos tal cual a la carpeta jugadas del repositorio. Necesita ffmpeg.</p>
   </div>
 </div>
 <header>
@@ -933,7 +933,7 @@ function afterSend(log){
   const cmd=allCmd();const q=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   log.innerHTML+=`<div style="margin-top:12px;padding:12px;border:1px solid var(--accent);border-radius:8px;background:rgba(249,115,22,.06)">
     <div style="font-weight:700;margin-bottom:6px">Vídeo con marcador${nC?' y '+nC+' jugadas':''}</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${hasBoard?'Ya se ha descargado <b>'+assName()+'</b> en Descargas. ':''}Copia el comando, pégalo en la terminal (cmd o PowerShell) y pulsa Enter.${hasBoard&&nC?' Primero incrusta el marcador y, cuando acaba, recorta las jugadas de ese vídeo con marcador.':''} Los clips quedan en la carpeta <b>jugadas</b> junto al vídeo.</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${hasBoard?'Ya se ha descargado <b>'+assName()+'</b> en Descargas. ':''}Copia el comando, pégalo en la terminal (cmd o PowerShell) y pulsa Enter.${nC?' Primero saca las jugadas (cada una con su marcador, en minutos) y'+(hasBoard?' después':'')+'':''}${hasBoard?' crea el vídeo entero con marcador (tarda bastante)':''}. Los clips quedan en la carpeta <b>jugadas</b> junto al vídeo.</div>
     <button class="btn-sec" style="margin:0 0 8px" onclick="copyAll()">📋 Copiar comando</button>
     <pre style="margin:0;white-space:pre-wrap;word-break:break-all;font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--muted);max-height:160px;overflow:auto">${q(cmd)}</pre></div>`;
   (navigator.clipboard?navigator.clipboard.writeText(cmd):Promise.reject()).then(()=>showToast('✓ Enviado. Comando copiado: pégalo en la terminal'),()=>{})}
@@ -1274,18 +1274,15 @@ function clipFile(cl,n,mt){const who=clipWho(cl).map(w=>jgSlug(w,false)).filter(
   return [mt.slug,who,kw,jgSlug(cl.desc||cl.note,true).slice(0,50)||'jugada',String(n).padStart(2,'0')].join('__')+'.mp4'}
 function vClipScript(kind){const cs=(state.clips||[]).slice().sort((x,y)=>x.a-y.a);if(!cs.length){showToast('⚠ No hay jugadas guardadas');return}
   const mt=jgMatch();if(!mt){showToast('⚠ Elige el partido en Setup: el nombre de cada clip lleva la jornada');return}
-  const c=cCfg();const base=vName||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base,board=stem+'_marcador.mp4';
-  const enc='-vf "scale=-2:\'min(720,ih)\'" -c:v libx264 -preset veryfast -crf 26 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart';
-  const SRC='@@SRC@@';
-  const cmds=cs.map((cl,i)=>`ffmpeg -nostdin -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${SRC}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "jugadas/${clipFile(cl,i+1,mt)}"`);
-  let txt,file;
+  const p=assParts();const board=clipBoard();if(board)vExportAss();
+  const lines=clipCmds();let txt,file;
   if(kind==='bat'){file='recortar_jugadas.bat';const e=x=>x.replace(/%/g,'%%');
-    txt=['@echo off','chcp 65001 >nul',`cd /d "${e(dirs().vid)}"`,`set "SRC=${e(base)}"`].concat(c.board?[`if exist "${e(board)}" set "SRC=${e(board)}"`]:[])
-      .concat(['if not exist "%SRC%" (echo No encuentro el video %SRC% en esta carpeta: '+e(dirs().vid)+'& pause & exit /b)','if not exist jugadas mkdir jugadas',`echo Recortando ${cs.length} jugadas de %SRC%...`])
-      .concat(cmds.map(x=>e(x).split(SRC).join('%SRC%'))).concat(['echo Listo: sube los videos de la carpeta jugadas a la carpeta jugadas de la web.','pause']).join('\r\n')+'\r\n'}
+    txt=['@echo off','chcp 65001 >nul',`if not exist "${e(p.inp)}" (echo No encuentro el video: ${e(p.inp)}& pause & exit /b)`]
+      .concat(board?[`if not exist "${e(p.assWin)}" (echo No encuentro el marcador: ${e(p.assWin)}& pause & exit /b)`]:[])
+      .concat([`echo Recortando ${cs.length} jugadas${board?' con marcador':''}...`]).concat(lines.map(e))
+      .concat([`echo Listo: los clips estan en ${e(p.dir)}\\jugadas. Subelos a la carpeta jugadas de la web.`,'pause']).join('\r\n')+'\r\n'}
   else{file='recortar_jugadas.sh';const e=x=>x.replace(/\$/g,'\\$').replace(/`/g,'\\`');
-    txt=['#!/bin/sh','cd "$(dirname "$0")"',`SRC="${e(base)}"`].concat(c.board?[`[ -f "${e(board)}" ] && SRC="${e(board)}"`]:[]).concat(['mkdir -p jugadas',`echo "Recortando ${cs.length} jugadas de $SRC..."`])
-      .concat(cmds.map(x=>e(x).split(SRC).join('$SRC'))).concat(['echo "Listo: mira la carpeta jugadas."']).join('\n')+'\n'}
+    txt=['#!/bin/sh'].concat(lines.map(e)).concat(['echo "Listo: mira la carpeta jugadas."']).join('\n')+'\n'}
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download=file;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);showToast('✓ '+file+' descargado')}
 
@@ -1331,11 +1328,18 @@ function assParts(){const d=dirs();const base=vName||'partido.mp4',dot=base.last
 function assCmd(){const p=assParts();return `ffmpeg -nostdin -y -i "${p.inp}" -vf "ass='${p.assF}'" -c:a copy "${p.out}"`}
 /* Todo en uno para pegar en la terminal (cmd o PowerShell): primero incrusta el marcador y,
    cuando acaba, recorta cada jugada de ese vídeo con marcador. Rutas completas: no hay que mover nada. */
-function clipCmds(src){const cs=(state.clips||[]).slice().sort((x,y)=>x.a-y.a);const mt=jgMatch();if(!cs.length||!mt)return[];const p=assParts();
-  const enc='-vf "scale=-2:\'min(720,ih)\'" -c:v libx264 -preset veryfast -crf 26 -pix_fmt yuv420p -c:a aac -b:a 96k -movflags +faststart';
-  return [`mkdir "${p.dir}\\jugadas"`].concat(cs.map((cl,i)=>`ffmpeg -nostdin -y -loglevel error -ss ${cl.a.toFixed(1)} -i "${src}" -t ${(cl.b-cl.a).toFixed(1)} ${enc} "${p.dir}\\jugadas\\${clipFile(cl,i+1,mt)}"`))}
-function allCmd(){const p=assParts();const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;
-  const lines=hasBoard?[assCmd()]:[];return lines.concat(clipCmds(hasBoard?p.out:p.inp)).join('\n')}
+/* Cada clip sale del vídeo ORIGINAL (una sola compresión, misma resolución) y, si hay marcador,
+   se pinta encima con el mismo .ass: setpts desplaza el reloj del clip al del partido para que el
+   marcador sea el de ese momento, y luego lo vuelve a poner a cero. */
+function clipBoard(){return cCfg().board!==false&&((state.vev||[]).length||vMark('q1').s!=null)}
+const CLIP_ENC='-c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -c:a aac -b:a 160k -movflags +faststart';
+function clipCmds(){const cs=(state.clips||[]).slice().sort((x,y)=>x.a-y.a);const mt=jgMatch();if(!cs.length||!mt)return[];const p=assParts();const board=clipBoard();
+  return [`mkdir "${p.dir}\\jugadas"`].concat(cs.map((cl,i)=>{const a=cl.a.toFixed(2);
+    const vf=board?` -vf "setpts=PTS+${a}/TB,ass='${p.assF}',setpts=PTS-STARTPTS"`:'';
+    return `ffmpeg -nostdin -y -loglevel error -ss ${a} -i "${p.inp}" -t ${(cl.b-cl.a).toFixed(2)}${vf} ${CLIP_ENC} "${p.dir}\\jugadas\\${clipFile(cl,i+1,mt)}"`}))}
+/* Primero las jugadas (tardan poco) y después el vídeo entero con marcador para el grupo. */
+function allCmd(){const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;
+  return clipCmds().concat(hasBoard?[assCmd()]:[]).join('\n')}
 function copyAll(){const t=allCmd();if(!t){showToast('⚠ No hay marcador ni jugadas que preparar');return}
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast('✓ Comando copiado: pégalo en la terminal'),()=>showToast('Selecciónalo y cópialo a mano'))}
 function vAssBat(){const p=assParts();const pc=x=>x.replace(/%/g,'%%');
