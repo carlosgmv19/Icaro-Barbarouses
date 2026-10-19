@@ -59,6 +59,58 @@ header{background:var(--bg2);border-bottom:2px solid var(--accent);padding:0 16p
 .dec-chips{display:flex;gap:3px}
 .dec-chip{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;padding:4px 7px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
 .dec-chip.sel{border-color:var(--accent);background:rgba(249,115,22,.18);color:var(--accent)}
+/* APUNTE RÁPIDO: acción → jugador */
+.qa{display:flex;flex-direction:column;gap:6px}
+.qa-acts{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.qa-b{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;letter-spacing:.5px;padding:9px 2px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;line-height:1;transition:transform .08s,background .15s}
+.qa-b:active{transform:scale(.95)}
+.qa-b.made{border-color:rgba(34,197,94,.5);color:var(--green)}
+.qa-b.miss{border-color:rgba(239,68,68,.35);color:#f87171}
+.qa-b.bad{border-color:rgba(234,179,8,.45);color:var(--yellow)}
+.qa-b.sel{background:var(--accent);border-color:var(--accent);color:#111}
+.qa-ply{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.qa-p{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;padding:10px 2px;border-radius:7px;border:1.5px solid rgba(59,130,246,.5);background:rgba(59,130,246,.1);color:var(--accent2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.qa-p small{position:absolute;top:2px;left:5px;font-size:9px;opacity:.6}
+.qa.wait .qa-p{background:rgba(59,130,246,.28);color:#fff;border-color:var(--accent2);animation:qaPulse 1s infinite}
+.qa-p.sel{background:var(--accent2);color:#fff}
+.qa-p.empty{border-style:dashed;color:var(--muted);background:transparent;cursor:default}
+@keyframes qaPulse{50%{box-shadow:0 0 0 3px rgba(59,130,246,.35)}}
+.qa-hint{font-size:12px;color:var(--muted);min-height:16px}
+.qa-hint b{color:var(--accent)}
+.alog{margin:10px 12px 0;background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.alog>summary{cursor:pointer;list-style:none;padding:9px 12px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;background:var(--bg3);display:flex;gap:8px;align-items:center}
+.alog>summary::-webkit-details-marker{display:none}
+.alog>summary:before{content:'▸';color:var(--accent)}
+.alog[open]>summary:before{content:'▾'}
+.alog .n{color:var(--muted);font-weight:600;font-size:12px}
+.af{display:flex;gap:4px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--border)}
+.af button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;padding:4px 9px;border-radius:14px;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+.af button.on{border-color:var(--accent);background:rgba(249,115,22,.15);color:var(--accent)}
+.al{max-height:300px;overflow:auto}
+.ar{display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid rgba(37,43,59,.6);font-size:13px}
+.ar:last-child{border-bottom:none}
+.ar .tm{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:var(--muted);min-width:86px;cursor:pointer}
+.ar .tm:hover{color:var(--accent2)}
+.ar .lb{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:13px;min-width:62px}
+.ar .who{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ar .x{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;width:26px;height:24px;cursor:pointer;flex:none}
+.ar .x:hover{border-color:var(--red);color:var(--red)}
+.ar.k-can .lb{color:var(--green)}.ar.k-fal .lb{color:#f87171}.ar.k-riv .lb{color:var(--red)}.ar.k-per .lb{color:var(--yellow)}.ar.k-jug .lb{color:var(--accent)}.ar.k-reb .lb,.ar.k-ast .lb,.ar.k-def .lb{color:var(--accent2)}
+.al-empty{padding:14px;color:var(--muted);font-size:13px}
+.qs{margin:10px 12px 0;overflow-x:auto;border:1px solid var(--border);border-radius:10px}
+.qs table{width:100%;border-collapse:collapse;font-size:13px}
+.qs th{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;padding:6px 5px;background:var(--bg3);text-align:center;white-space:nowrap}
+.qs td{padding:5px;text-align:center;border-top:1px solid rgba(37,43,59,.6);white-space:nowrap;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:14px}
+.qs td:first-child,.qs th:first-child{text-align:left;padding-left:10px}
+.qs tr.on td:first-child{color:var(--accent2);font-weight:800}
+.qs tr.idle td{color:var(--muted)}
+.qs tr.tot td{border-top:2px solid var(--accent);color:var(--accent);font-weight:800}
+.qs td.pts{font-weight:800;color:var(--text)}
+.fix{margin:10px 12px 0;border:1px dashed var(--border);border-radius:10px}
+.fix>summary{cursor:pointer;padding:8px 12px;font-size:12px;color:var(--muted)}
+.fix .fx-p{padding:6px 12px 10px}
+.fix .fx-p b{display:block;font-family:'Barlow Condensed',sans-serif;font-size:14px;margin-bottom:4px}
+.fix .edit-inputs{display:grid}
 /* PLAYER CARDS */
 .cards-container{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .player-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s,opacity .2s}
@@ -460,7 +512,7 @@ const SAVE_KEY='icaro_tracker_v2';const CFG_KEY='icaro_tracker_cfg';
 function freshState(){return{rival:'',date:'',temporada:'',partidoId:'',players:[],stats:{},times:{},editMode:{},
   courtPlayers:{q1:new Set(),q2:new Set(),q3:new Set(),q4:new Set(),q5:new Set()},ot:false,chg:null,
   opp:{q1:0,q2:0,q3:0,q4:0,q5:0},stints:[],curStint:{q1:null,q2:null,q3:null,q4:null,q5:null},sentAt:null,
-  vev:[],vmarks:{},vcfg:{qLen:12,prLen:3,tmLen:90},marks:[],bpos:[],sid:0,clips:[],ccfg:{pre:5,post:5,board:true,v2:1}}}
+  vev:[],vmarks:{},vcfg:{qLen:12,prLen:3,tmLen:90},marks:[],bpos:[],sid:0,clips:[],ccfg:{pre:5,post:5,board:true,v2:1},acts:[],aseq:0,afilt:null,aopen:true}}
 let state=freshState();
 let sheetData=null;
 
@@ -638,9 +690,7 @@ function renderQuarter(q){
   const t=initTimes(q);const cp=state.courtPlayers[q];const cnt=cp.size;
   const cntCls=cnt===5?'full':cnt>0?'ok':'';
   const courtBtns=players.map(p=>{const on=cp.has(p);const canAdd=on||cnt<5;
-    return `<div class="court-player-wrap"><button class="court-btn ${on?'on':''}" onclick="toggleCourt('${p}','${q}')" ${!canAdd?'disabled':''}>${p}</button><button class="scroll-btn" onclick="scrollToPlayer('${q}','${p}')" title="Ir a ${p}">⬇</button></div>`}).join('');
-  const decVals=[0,0.25,0.5,0.75];
-  const decChips=decVals.map(v=>`<button class="dec-chip ${state.minDec===v?'sel':''}" onclick="setMinDec(${v},'${q}')">${v===0?'0':'.'+String(v).split('.')[1]}</button>`).join('');
+    return `<button class="court-btn ${on?'on':''}" onclick="toggleCourt('${p}','${q}')" ${!canAdd?'disabled':''}>${p}</button>`}).join('');
   const html=`<div class="sticky-panel" id="stickyPanel-${q}">
     <div class="quarter-times">
       <span class="qt-label">⏱ Cuarto</span>
@@ -654,20 +704,120 @@ function renderQuarter(q){
       ${courtBtns}
     </div>
     <div class="lineup-row" id="lineupRow-${q}">${lineupRowHTML(q)}</div>
+    <div class="qa" id="qa-${q}">${qaHTML(q)}</div>
     <div class="trackers-row">
-      <span class="tracker-label" title="Vuestros puntos suben solos al marcar 2✓, 3✓ o TL✓ en un jugador">🔴 Anota el rival</span>
+      <span class="tracker-label" title="Vuestros puntos suben solos al apuntar 2✓, 3✓ o TL✓">🔴 Anota el rival</span>
       <button class="btn-apply btn-minus" onclick="addPoints('${q}','minus',1)">+1</button>
       <button class="btn-apply btn-minus" onclick="addPoints('${q}','minus',2)">+2</button>
       <button class="btn-apply btn-minus" onclick="addPoints('${q}','minus',3)">+3</button>
     </div>
   </div>
-  <div class="cards-container" id="cards-${q}">
-    ${sortedPlayers(q).map(p=>playerCardHTML(p,q)).join('')}
-  </div>
-  ${totalsBarHTML(q)}`;
+  <details class="alog" id="alog-${q}" ${state.aopen!==false?'open':''} ontoggle="state.aopen=this.open;touch()">
+    <summary>Acciones del cuarto <span class="n" id="alogN-${q}"></span></summary>
+    <div class="af" id="af-${q}"></div>
+    <div class="al" id="al-${q}"></div>
+  </details>
+  <div class="qs" id="qs-${q}"></div>
+  <details class="fix"><summary>✏ Corregir a mano (cambiar un número directamente)</summary>
+    ${players.map(p=>`<div class="fx-p"><b>${p}</b><div class="edit-inputs open">${editInputsHTML(p,q,state.stats[p][q])}</div></div>`).join('')}
+  </details>`;
   page.innerHTML=html;
-  attachLongPress(q)
+  renderALog(q);renderQStats(q)
 }
+
+/* ── APUNTE RÁPIDO: primero la acción, luego quién (de los 5 en pista).
+   Al pulsar la acción el vídeo se para; al elegir jugador se apunta y sigue. ── */
+const QA_ACTS=[['fg2m','2 ✓','made'],['fg3m','3 ✓','made'],['ftm','TL ✓','made'],['rebd','REB D',''],['rebo','REB O',''],['ast','ASIST',''],
+  ['fg2a','2 ✗','miss'],['fg3a','3 ✗','miss'],['fta','TL ✗','miss'],['stl','ROBO',''],['blk','TAPÓN',''],['tov','PÉRDIDA','bad']];
+const QA_LBL=Object.fromEntries(QA_ACTS.map(x=>[x[0],x[1]]));
+const MISS_OF={fg2a:'fg2m',fg3a:'fg3m',fta:'ftm'};
+let qaPend=null; // {q,f,p,play,t}
+function qaCourt(q){const cp=state.courtPlayers[q];return activePlayers().filter(p=>cp.has(p))}
+function qaHTML(q){const pd=qaPend&&qaPend.q===q?qaPend:null;const on=qaCourt(q);
+  const acts=QA_ACTS.map(([f,l,c])=>`<button class="qa-b ${c} ${pd&&pd.f===f?'sel':''}" onclick="qaAct('${q}','${f}')">${l}</button>`).join('');
+  const ps=[0,1,2,3,4].map(i=>on[i]!=null?`<button class="qa-p ${pd&&pd.p===on[i]?'sel':''}" onclick="qaPly('${q}',${i})" title="Tecla ${i+1}"><small>${i+1}</small>${on[i]}</button>`:`<button class="qa-p empty" disabled>—</button>`).join('');
+  const hint=pd&&pd.f?`<b>${QA_LBL[pd.f]}</b> · ¿de quién? (o tecla 1–5 · Esc cancela)`:pd&&pd.p?`<b>${pd.p}</b> · ¿qué ha hecho?`:
+    on.length?'Pulsa la acción y después el jugador':'⚠ Marca arriba quién está en pista';
+  return `<div class="qa-acts">${acts}</div><div class="qa-ply">${ps}</div><div class="qa-hint">${hint}</div>`}
+function qaPaint(q){const el=document.getElementById('qa-'+q);if(!el)return;el.innerHTML=qaHTML(q);el.classList.toggle('wait',!!(qaPend&&qaPend.q===q&&qaPend.f))}
+function qaAct(q,f){
+  if(qaPend&&qaPend.q===q&&qaPend.p&&!qaPend.f){const p=qaPend.p,play=qaPend.play;qaPend=null;qaApply(q,p,f,vNow(),play);return}
+  if(qaPend&&qaPend.q===q&&qaPend.f===f){qaCancel();return}
+  const play=qaPend?qaPend.play:(vid&&vid.getAttribute('src')&&!vid.paused);
+  if(play)vid.pause();
+  qaPend={q,f,play,t:vNow()};qaPaint(q)}
+function qaPly(q,i){const p=qaCourt(q)[i];if(!p)return;
+  if(qaPend&&qaPend.q===q&&qaPend.f){const{f,play,t}=qaPend;qaPend=null;qaApply(q,p,f,t,play);return}
+  const play=qaPend?qaPend.play:(vid&&vid.getAttribute('src')&&!vid.paused);if(play)vid.pause();
+  qaPend={q,p,play,t:vNow()};qaPaint(q)}
+function qaCancel(){if(!qaPend)return;const{q,play}=qaPend;qaPend=null;qaPaint(q);if(play&&!state.chg)vid.play()}
+function qaApply(q,p,f,t,play){
+  if(!isOnCourt(p,q)){showToast('⚠ '+p+' no está en pista');qaPaint(q);return}
+  const s=initStat(p,q);const snap=shotSnap(q);
+  s[f]++;if(ATT_OF[f])s[ATT_OF[f]]++;
+  shotDelta(q,snap);
+  const a={id:state.aseq=(state.aseq||0)+1,t:t!=null?t:null,q,p,f};state.acts.push(a);
+  if(PTS_OF[f])addPoints(q,'plus',PTS_OF[f],Object.assign({by:p,f},t!=null?{t}:{}));
+  updateScore();touch();qaPaint(q);renderALog(q);renderQStats(q);
+  showToast('✓ '+QA_LBL[f]+' · '+p);
+  if(play&&!state.chg)vid.play()}
+// quitar una acción: deshace la estadística y, si era canasta, sus puntos y el +/−
+function delAct(id){const i=state.acts.findIndex(a=>a.id===id);if(i<0)return;const a=state.acts[i];const{q,p,f}=a;
+  if(PTS_OF[f]){const k=(state.vev||[]).findIndex(e=>e.q===q&&e.by===p&&e.f===f&&a.t!=null&&Math.abs(e.t-a.t)<0.05);
+    if(k>=0){vDelEv(k,true)}else removePoints(q,p,f)}
+  const ii=state.acts.findIndex(x=>x.id===id);if(ii>=0)state.acts.splice(ii,1);
+  const s=initStat(p,q);const snap=shotSnap(q);
+  if(MISS_OF[f]){if(s[f]>s[MISS_OF[f]])s[f]--}
+  else if(s[f]>0){s[f]--;if(ATT_OF[f]&&s[ATT_OF[f]]>0)s[ATT_OF[f]]--}
+  shotDelta(q,snap);updateScore();touch();refreshQ(q);
+  showToast('↩ '+QA_LBL[f]+' de '+p+' borrado')}
+document.addEventListener('keydown',e=>{if(!qaPend||e.ctrlKey||e.metaKey||e.altKey)return;
+  const tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.tagName==='SELECT'))return;
+  if(document.getElementById('vJg').classList.contains('on'))return;
+  if(e.key==='Escape'){qaCancel();e.preventDefault();e.stopImmediatePropagation()}
+  else if(/^[1-5]$/.test(e.key)&&qaPend.f){qaPly(qaPend.q,+e.key-1);e.preventDefault();e.stopImmediatePropagation()}},true);
+
+/* ── LISTA DE ACCIONES del cuarto (con filtros y X para borrar) ── */
+const AF_KINDS=[['can','Canastas'],['fal','Fallos'],['reb','Rebotes'],['ast','Asistencias'],['def','Robos/tapones'],['per','Pérdidas'],['riv','Rival'],['jug','Jugadas ⭐']];
+const AF_DEF=['can','reb','ast','def','per','riv','jug'];
+function actKind(f){return PTS_OF[f]?'can':MISS_OF[f]?'fal':f==='rebd'||f==='rebo'?'reb':f==='ast'?'ast':f==='stl'||f==='blk'?'def':'per'}
+function afSel(){return Array.isArray(state.afilt)?state.afilt:AF_DEF}
+function afToggle(q,k){let f=afSel().slice();if(k==='all')f=f.length===AF_KINDS.length?AF_DEF.slice():AF_KINDS.map(x=>x[0]);
+  else f=f.includes(k)?f.filter(x=>x!==k):f.concat(k);state.afilt=f;touch();renderALog(q)}
+function qActions(q){const out=[];
+  (state.acts||[]).forEach(a=>{if(a.q===q)out.push({t:a.t,o:a.id,k:actKind(a.f),lb:QA_LBL[a.f],who:a.p,del:`delAct(${a.id})`})});
+  (state.vev||[]).forEach((e,i)=>{if(e.q!==q)return;
+    if(e.k==='a')out.push({t:e.t,o:e.n!=null?e.n:i/1e3,k:'riv',lb:'Rival +'+e.p,who:'',del:`vDelEv(${i})`});
+    else if(!(state.acts||[]).some(a=>a.q===q&&a.p===e.by&&a.f===e.f&&a.t!=null&&Math.abs(a.t-e.t)<0.05))
+      out.push({t:e.t,o:e.n!=null?e.n:i/1e3,k:'can',lb:e.f?QA_LBL[e.f]:'+'+e.p,who:e.by||'',del:`vDelEv(${i})`})});
+  const hasMk=QUARTERS.some(p=>vMark(p).s!=null);
+  (state.clips||[]).forEach((c,i)=>{const m=(c.a+c.b)/2;if(hasMk?periodAt(m)!==q:q!=='q1')return;
+    out.push({t:m,o:2e6+i,k:'jug',lb:'⭐ Jugada',who:[(c.who||[]).join(', '),(c.kw||[]).join(' ')].filter(Boolean).join(' · ')||c.desc||'',del:`vClipDel(${i});refreshQ('${q}')`})});
+  return out.sort((x,y)=>(y.t??-1)-(x.t??-1)||y.o-x.o)}
+function renderALog(q){const fl=document.getElementById('af-'+q),al=document.getElementById('al-'+q);if(!fl||!al)return;
+  const sel=afSel();const all=qActions(q);const cnt={};all.forEach(r=>cnt[r.k]=(cnt[r.k]||0)+1);
+  fl.innerHTML=`<button class="${sel.length===AF_KINDS.length?'on':''}" onclick="afToggle('${q}','all')">Todas</button>`+
+    AF_KINDS.map(([k,l])=>`<button class="${sel.includes(k)?'on':''}" onclick="afToggle('${q}','${k}')">${l}${cnt[k]?' · '+cnt[k]:''}</button>`).join('');
+  const rows=all.filter(r=>sel.includes(r.k));const hasMk=QUARTERS.some(p=>vMark(p).s!=null);
+  document.getElementById('alogN-'+q).textContent=rows.length+(rows.length!==all.length?' de '+all.length:'');
+  al.innerHTML=rows.length?rows.map(r=>{const tm=r.t==null?'—':vFmt(r.t)+(hasMk?' · '+clockAt(r.t).txt:'');
+    return `<div class="ar k-${r.k}"><span class="tm" ${r.t!=null?`onclick="vSeek(${r.t})" title="Ir a este momento del vídeo"`:''}>${tm}</span><span class="lb">${r.lb}</span><span class="who">${r.who}</span><button class="x" title="Borrar esta acción" onclick="${r.del}">✕</button></div>`}).join('')
+    :`<div class="al-empty">${all.length?'Ninguna acción con estos filtros.':'Todavía no hay acciones en este cuarto.'}</div>`}
+function vSeek(t){if(!vid||!vid.getAttribute('src'))return;vid.currentTime=Math.max(0,t-3)}
+
+/* ── STATS DEL CUARTO (se actualizan al apuntar) ── */
+function renderQStats(q){const el=document.getElementById('qs-'+q);if(!el)return;
+  const ps=activePlayers();const pct=(m,a)=>a?`${m}/${a}`:'–';
+  const row=(name,s,c,cls,mn)=>`<tr class="${cls}"><td>${name}</td><td>${mn}</td><td class="pts">${c.pts}</td><td>${pct(s.fg2m,s.fg2a)}</td><td>${pct(s.fg3m,s.fg3a)}</td><td>${pct(s.ftm,s.fta)}</td><td>${s.rebd}</td><td>${s.rebo}</td><td>${s.ast}</td><td>${s.stl}</td><td>${s.blk}</td><td>${s.tov}</td><td>${c.pm>0?'+':''}${Math.round(c.pm*10)/10}</td><td>${Math.round(c.eff*10)/10}</td></tr>`;
+  const fm=v=>{v=v||0;return v%1===0?String(v):String(Math.round(v*100)/100)};
+  const body=ps.map(p=>{const s=initStat(p,q);const c=computed(s);const used=isOnCourt(p,q)||s.min||s.plus||s.minus||SHOT.concat(['rebd','rebo','ast','stl','blk','tov']).some(k=>s[k]);
+    return row(p,s,c,isOnCourt(p,q)?'on':used?'':'idle',fm(s.min))}).join('');
+  const tot={fg2m:0,fg2a:0,fg3m:0,fg3a:0,ftm:0,fta:0,rebd:0,rebo:0,ast:0,stl:0,blk:0,tov:0,plus:0,minus:0};
+  ps.forEach(p=>{const s=initStat(p,q);Object.keys(tot).forEach(k=>tot[k]+=s[k]||0)});
+  const ct=computed(tot);ct.pm=(state.courtPlayers[q].size?0:0);
+  const our=ct.pts,opp=state.opp[q]||0;
+  el.innerHTML=`<table><thead><tr><th>${Q_LABELS[q]} cuarto</th><th>MIN</th><th>PTS</th><th>2P</th><th>3P</th><th>TL</th><th>RD</th><th>RO</th><th>AST</th><th>ROB</th><th>TAP</th><th>PÉR</th><th>+/−</th><th>EFF</th></tr></thead><tbody>${body}</tbody>
+    <tfoot>${row('Total',tot,Object.assign(ct,{pm:our-opp}),'tot','')}</tfoot></table>`}
 
 function playerCardHTML(p,q){
   const s=state.stats[p][q];const c=computed(s);
@@ -764,7 +914,7 @@ function addPoints(q,type,val,meta){
   cp.forEach(p=>{initStat(p,q)[type]+=val;updateCard(p,q)});
   if(type==='minus')state.opp[q]=(state.opp[q]||0)+val;
   const st=liveStint(q);if(st){if(type==='plus')st.pf+=val;else st.pc+=val}
-  const vt=vNow();if(vt!=null){state.vev.push(Object.assign({t:vt,k:type==='plus'?'h':'a',p:val,q,players:[...cp],sid:st?st.id:null},meta||{}));renderVList()}
+  const vt=vNow();if(vt!=null){state.vev.push(Object.assign({t:vt,n:state.aseq=(state.aseq||0)+1,k:type==='plus'?'h':'a',p:val,q,players:[...cp],sid:st?st.id:null},meta||{}));renderVList()}
   refreshLineupRow(q);updateScore();touch();
   if(!meta)showToast(`🔴 +${val} rival${st?'':' (sin quinteto completo)'}`)
 }
@@ -789,7 +939,7 @@ function applyMin(q){
   showToast(`⏱ +${add}min → ${cp.size} jugadores${st?'':' (sin quinteto completo)'}`)
 }
 
-function updateCard(p,q){
+function updateCard(p,q){qsSoon(q);
   const card=document.getElementById(`card-${q}-${esc(p)}`);if(!card)return;
   const s=state.stats[p][q];const c=computed(s);const on=isOnCourt(p,q);
   card.className=`player-card ${on?'on-court':'off-court'}`;
@@ -813,6 +963,7 @@ function updateCard(p,q){
     tb.innerHTML=`<span class="tl">TOTAL</span><span class="ts">PTS <span>${tot.pts}</span></span><span class="ts">REB <span>${tot.reb}</span></span><span class="ts">AST <span>${tot.ast}</span></span><span class="ts">FG <span>${tot.fgm}/${tot.fga} (${tot.pctFg.toFixed(1)}%)</span></span><span class="ts">3P <span>${tot.fg3m}/${tot.fg3a}</span></span><span class="ts">FT <span>${tot.ftm}/${tot.fta}</span></span><span class="ts">EFF <span>${tot.eff.toFixed(1)}</span></span>`}
 }
 
+let qsT={};function qsSoon(q){if(qsT[q])return;qsT[q]=requestAnimationFrame(()=>{qsT[q]=0;renderQStats(q);renderALog(q)})}
 function attachLongPress(q){
   document.querySelectorAll(`#page-${q} .stat-btn`).forEach(btn=>{
     let timer;
@@ -1170,7 +1321,8 @@ function vDelEv(i,quiet){const e=state.vev[i];if(!e)return;const f=e.k==='h'?'pl
   (e.players||[]).forEach(p=>{const s=initStat(p,e.q);s[f]=Math.max(0,s[f]-e.p)});
   if(e.k==='a')state.opp[e.q]=Math.max(0,(state.opp[e.q]||0)-e.p);
   const st=state.stints.find(x=>x.id!=null&&x.id===e.sid);if(st){if(e.k==='h')st.pf=Math.max(0,st.pf-e.p);else st.pc=Math.max(0,st.pc-e.p)}
-  if(!quiet&&e.by&&e.f){const s=initStat(e.by,e.q),a=ATT_OF[e.f];if(s[e.f]>0){s[e.f]--;if(s[a]>0)s[a]--}if(st){if(st[e.f]>0)st[e.f]--;if(st[a]>0)st[a]--}}
+  if(!quiet&&e.by&&e.f){const ai=(state.acts||[]).findIndex(x=>x.q===e.q&&x.p===e.by&&x.f===e.f&&x.t!=null&&Math.abs(x.t-e.t)<0.05);if(ai>=0)state.acts.splice(ai,1);
+    const s=initStat(e.by,e.q),a=ATT_OF[e.f];if(s[e.f]>0){s[e.f]--;if(s[a]>0)s[a]--}if(st){if(st[e.f]>0)st[e.f]--;if(st[a]>0)st[a]--}}
   state.vev.splice(i,1);touch();updateScore();
   const act=document.querySelector('.tab.active')?.dataset.tab;if(QUARTERS.includes(act))renderQuarter(act);if(act==='quintetos')renderQuintetos();
   renderVList();if(!quiet)showToast(e.by?'↩ Canasta de '+e.by+' borrada (también de sus estadísticas y del +/−)':'↩ Anotación borrada (también del +/−)')}
@@ -1256,10 +1408,10 @@ function jgDelete(){if(!jg||jg.i==null)return;state.clips.splice(jg.i,1);touch()
   document.getElementById('vJgK').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b||!jg)return;const k=b.dataset.k;jg.kw=jg.kw.includes(k)?jg.kw.filter(x=>x!==k):jg.kw.concat(k);jgRender()});
   document.getElementById('vJg').addEventListener('click',e=>{if(e.target.id==='vJg')jgClose()})})();
 
-function vClipDel(i){state.clips.splice(i,1);touch();renderClips()}
+function vClipDel(i){state.clips.splice(i,1);touch();renderClips();const act=document.querySelector('.tab.active')?.dataset.tab;if(QUARTERS.includes(act))renderALog(act)}
 function vClipPlay(i){const cl=state.clips[i];if(!cl)return;vid.currentTime=cl.a;vStopAt=cl.b;vid.play()}
 function clipWho(cl){return Array.isArray(cl.who)?cl.who:(cl.who?[cl.who]:[])}
-function renderClips(){const el=document.getElementById('vClips');if(!el)return;const cs=state.clips||[];const c=cCfg();
+function renderClips(){{const act=document.querySelector('.tab.active')?.dataset.tab;if(QUARTERS.includes(act))renderALog(act)}const el=document.getElementById('vClips');if(!el)return;const cs=state.clips||[];const c=cCfg();
   document.getElementById('cPre').value=c.pre;document.getElementById('cPost').value=c.post;document.getElementById('cBoard').checked=!!c.board;
   document.getElementById('vClipN').textContent=cs.length?'('+cs.length+')':'';const n2=document.getElementById('vClipN2');if(n2)n2.textContent=cs.length?'('+cs.length+')':'';
   const q=s=>String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
