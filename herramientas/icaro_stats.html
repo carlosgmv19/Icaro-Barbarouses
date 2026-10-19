@@ -306,6 +306,15 @@ body.has-video #vDock{display:flex;flex-direction:column}
 .v-posg button.on{background:var(--accent);border-color:var(--accent)}
 .v-modal{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px}
 .v-modal.on{display:flex}
+@media(min-width:900px){body.has-video .v-modal.side{left:54vw}}
+.fx-t{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.fx-t button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer}
+.fx-t b{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;padding:0 6px}
+.v-modal .pl button.out{border-color:var(--red);color:#f87171;text-decoration:line-through}
+.v-modal .pl button.in{box-shadow:0 0 0 2px var(--green)}
+.fx-i{font-size:13px;color:var(--muted);line-height:1.5}
+.fx-i b{color:var(--text)}
+.fx-i label{display:flex;gap:8px;align-items:flex-start;margin-top:6px;color:var(--text);cursor:pointer}
 .v-modal .box{background:var(--bg2);border:2px solid var(--accent);border-radius:12px;padding:18px;width:min(560px,96vw);display:flex;flex-direction:column;gap:12px}
 .v-modal h3{margin:0;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:.5px}
 .v-modal p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
@@ -361,6 +370,7 @@ document.body.appendChild(d)})})();
     <label title="Lo que marca el reloj cuando empieza el cuarto elegido (si empieza con menos tiempo, cámbialo)">reloj al empezar<input id="vC0" type="text" style="width:56px" onchange="vSetC0(this.value)"></label>
     <button id="vMarkBtn" onclick="jgOpen()" title="Abre el recortador con 5 s antes y 5 s después de este momento (tecla J)" style="border-color:var(--accent);color:var(--accent)">⭐ Jugada</button>
     <button id="vChg" onclick="vChange()" title="Para el reloj para hacer cambios; al confirmar, el quinteto nuevo empieza a contar">🔁 Cambio</button>
+    <button onclick="fxOpen()" title="Mete un cambio que se te olvidó apuntar, en el momento del vídeo en que pasó, sin borrar nada">⏪ Cambio olvidado</button>
     <button id="vBrk" onclick="vBreak()" title="Descanso entre cuartos, lesión o parón: el vídeo avanza rápido; al volver el juego, retrocede 10 s para marcar el momento exacto">⏩ Descanso / parón</button>
     <button id="vPauseBtn" onclick="vPause()" title="Para o reanuda el reloj del cuarto">⏸ Parar reloj</button>
     <button id="vTMh" onclick="vTM('h')" title="Tiempo muerto de Icaro: para el reloj del partido y empieza la cuenta atrás">⏱ TM Icaro</button>
@@ -486,6 +496,14 @@ document.body.appendChild(d)})})();
   <p>Revisa quién empieza este cuarto en pista. Tienen que ser 5. El reloj no arranca hasta que lo confirmes.</p>
   <div class="pl" id="vLuP"></div>
   <div class="acts"><button onclick="vLuCancel()">Cancelar inicio</button><button class="go" id="vLuOk" onclick="vLuOk()">Quinteto correcto, empezar</button></div>
+</div></div>
+<div class="v-modal side" id="vFx"><div class="box">
+  <h3 id="vFxT">⏪ Cambio olvidado</h3>
+  <p>Lleva el vídeo al momento en que entraron (pinchar la hora en la lista de acciones te lleva cerca) y marca los 5 que había en pista desde ahí. Todo lo apuntado desde ese momento se pasa al quinteto bueno (+/−, minutos y quintetos), también en los cambios que hiciste después, mientras el que salió siguiera apuntado en pista.</p>
+  <div class="fx-t"><button onclick="fxNudge(-5)">−5 s</button><button onclick="fxNudge(-1)">−1 s</button><b id="vFxW"></b><button onclick="fxNudge(1)">+1 s</button><button onclick="fxNudge(5)">+5 s</button></div>
+  <div class="pl" id="vFxP"></div>
+  <div id="vFxI" class="fx-i"></div>
+  <div class="acts"><button onclick="fxClose()">Cancelar</button><button class="go" id="vFxOk" onclick="fxApply()">Aplicar cambio</button></div>
 </div></div>
 <div class="v-modal" id="vOT"><div class="box">
   <h3>Fin del 4º cuarto</h3>
@@ -1280,6 +1298,63 @@ function vChange(auto){const t=vNow();if(t==null){showToast('⚠ Abre el vídeo'
   vChgWas=!vid.paused;vid.pause();
   m.pauses.push([t,null,{chg:1}]);state.chg={q,t};touch();renderVList();goTab(q);showToast('🔁 Vídeo parado: haz los cambios en "En pista" y pulsa Confirmar cambios')}
 let vChgWas=false;
+/* ── CAMBIO OLVIDADO: mete un cambio en un momento pasado del vídeo sin borrar nada ── */
+let fx=null;
+function fxStint(q,T){const its=state.stints.filter(x=>x.q===q&&x.vt!=null).sort((a,b)=>a.vt-b.vt);let S=null,N=null;
+  its.forEach(x=>{if(x.vt<=T+0.01)S=x;else if(!N)N=x});return{S,Tn:N?N.vt:Infinity}}
+// el cambio olvidado sigue valiendo en los quintetos siguientes mientras el que salió siga apuntado en pista (y el que entró no)
+function fxChain(q,S,outs,ins){const its=state.stints.filter(x=>x.q===q&&x.vt!=null&&x.vt>S.vt).sort((a,b)=>a.vt-b.vt);const ch=[];let end=Infinity;
+  for(const x of its){if(outs.every(p=>x.players.includes(p))&&!ins.some(p=>x.players.includes(p)))ch.push(x);else{end=x.vt;break}}return{ch,end}}
+function fxOpen(){const t=vNow();if(t==null){showToast('⚠ Abre el vídeo');return}
+  if(state.chg){showToast('⚠ Termina antes el cambio en curso');return}
+  vid.pause();fx={sel:null,auto:true,re:false};fxRefresh();document.getElementById('vFx').classList.add('on')}
+function fxClose(){document.getElementById('vFx').classList.remove('on');fx=null}
+function fxNudge(d){vid.currentTime=Math.max(0,vid.currentTime+d);setTimeout(fxRefresh,80)}
+function fxRefresh(){if(!fx)return;const T=vNow();const q=periodAt(T);const m=vMark(q);fx.T=T;fx.q=q;
+  const ok=document.getElementById('vFxOk');const P=document.getElementById('vFxP'),I=document.getElementById('vFxI');
+  document.getElementById('vFxW').textContent=vFmt(T)+(m.s!=null?' · '+P_LBL[q]+' '+clockAt(T).txt:'');
+  const{S,Tn}=m.s!=null&&T>=m.s?fxStint(q,T):{S:null};
+  if(!S){fx.S=null;P.innerHTML='';I.innerHTML='⚠ En ese momento no hay ningún quinteto apuntado (lleva el vídeo a un momento con el cuarto en juego).';ok.disabled=true;return}
+  if(fx.S!==S){fx.S=S;fx.sel=S.players.slice()}fx.Tn=Tn;
+  const old=S.players;const outs=old.filter(p=>!fx.sel.includes(p)),ins=fx.sel.filter(p=>!old.includes(p));
+  P.innerHTML=activePlayers().map(p=>{const on=fx.sel.includes(p);const cl=on?(old.includes(p)?'on':'on in'):(old.includes(p)?'out':'');
+    return `<button class="${cl}" onclick="fxTog('${p.replace(/'/g,"\\'")}')">${on?'✓ ':''}${p}</button>`}).join('');
+  const E=outs.length&&outs.length===ins.length?fxChain(q,S,outs,ins).end:Tn;fx.E=E;
+  const end=E===Infinity?'ahora':vFmt(E)+(m.s!=null?' ('+clockAt(E).txt+')':'');
+  let h=`Quinteto apuntado en ese momento: <b>${old.join(', ')}</b>.<br>`;
+  if(outs.length)h+=`Sale${outs.length>1?'n':''} <b>${outs.join(', ')}</b> · entra${ins.length>1?'n':''} <b>${ins.join(', ')}</b>. Se corrige desde <b>${vFmt(T)}</b> hasta <b>${end}</b>${E===Infinity?'':' (cuando ya no estaba apuntado en pista)'}.`;
+  else h+='Quita a los que salieron y marca a los que entraron.';
+  if(outs.length===1&&ins.length===1){const n=(state.acts||[]).filter(a=>a.q===q&&a.p===outs[0]&&a.t!=null&&a.t>=T-0.01&&a.t<E).length;
+    if(n)h+=`<label><input type="checkbox" ${fx.re?'checked':''} onchange="fx.re=this.checked"> ${n===1?'La acción apuntada':'Las '+n+' acciones apuntadas'} a ${outs[0]} en ese rato ${n===1?'era':'eran'} de ${ins[0]}: pasársela${n===1?'':'s'}</label>`}
+  I.innerHTML=h;ok.disabled=fx.sel.length!==5||!outs.length;ok.textContent=fx.sel.length!==5?'Marca 5 ('+fx.sel.length+'/5)':'Aplicar cambio'}
+function fxTog(p){const i=fx.sel.indexOf(p);if(i>=0)fx.sel.splice(i,1);else if(fx.sel.length<5)fx.sel.push(p);else{showToast('⚠ Ya hay 5: quita al que salió');return}fxRefresh()}
+function fxApply(){if(!fx||!fx.S||fx.sel.length!==5)return;const{q,T,S,Tn}=fx;const L=fx.sel.slice();const old=S.players.slice();
+  const outs=old.filter(p=>!L.includes(p)),ins=L.filter(p=>!old.includes(p));if(!outs.length||outs.length!==ins.length)return;
+  const mp=arr=>arr.map(p=>outs.includes(p)?ins[outs.indexOf(p)]:p);
+  const{ch,end:E}=fxChain(q,S,outs,ins);
+  const near=T-S.vt<1;const cur=curStint(q);let N;
+  if(near){N=S;const k=lineupKey(new Set(L));S.key=k;S.players=k.split('|')}
+  else{const k=lineupKey(new Set(L));N={q,key:k,players:k.split('|'),min:0,pf:0,pc:0,id:(state.sid=(state.sid||0)+1),vt:T};const at=state.stints.indexOf(S)+1;state.stints.splice(at,0,N);
+    QUARTERS.forEach(x=>{if(state.curStint[x]!=null&&state.curStint[x]>=at)state.curStint[x]++});if(cur===S)state.curStint[q]=at}
+  ch.forEach(x=>{const k=lineupKey(new Set(mp(x.players)));x.key=k;x.players=k.split('|')});
+  const inR=t=>t!=null&&t>=T-0.01&&t<E;const inS=t=>t!=null&&t>=T-0.01&&t<Tn;
+  // puntos: +/− de cada jugador y del quinteto
+  (state.vev||[]).forEach(e=>{if(e.q!==q||!inR(e.t))return;const f=e.k==='h'?'plus':'minus';const was=e.players||[];const now=mp(was);
+    was.filter(p=>!now.includes(p)).forEach(p=>{const s=initStat(p,q);s[f]=Math.max(0,s[f]-e.p)});
+    now.filter(p=>!was.includes(p)).forEach(p=>{initStat(p,q)[f]+=e.p});e.players=now;
+    if(!near&&inS(e.t)&&e.sid===S.id){if(e.k==='h'){S.pf=Math.max(0,S.pf-e.p);N.pf+=e.p}else{S.pc=Math.max(0,S.pc-e.p);N.pc+=e.p}e.sid=N.id}});
+  // tiros del quinteto (solo el tramo que se parte)
+  if(!near)(state.acts||[]).forEach(a=>{if(a.q!==q||!inS(a.t)||!SHOT.includes(a.f))return;const ks=ATT_OF[a.f]?[a.f,ATT_OF[a.f]]:[a.f];
+    ks.forEach(k=>{if(S[k]>0)S[k]--;N[k]=(N[k]||0)+1})});
+  // acciones del que salió que eran del que entró
+  let moved=0;if(fx.re&&outs.length===1){const o=outs[0],n=ins[0];
+    (state.acts||[]).forEach(a=>{if(a.q!==q||a.p!==o||!inR(a.t))return;const so=initStat(o,q),sn=initStat(n,q);
+      if(so[a.f]>0)so[a.f]--;sn[a.f]=(sn[a.f]||0)+1;const at=ATT_OF[a.f];if(at){if(so[at]>0)so[at]--;sn[at]=(sn[at]||0)+1}
+      (state.vev||[]).forEach(e=>{if(e.q===q&&e.by===o&&e.f===a.f&&Math.abs(e.t-a.t)<0.05)e.by=n});a.p=n;moved++})}
+  // quién está en pista ahora
+  if(E===Infinity){const cp=state.courtPlayers[q];if(outs.every(p=>cp.has(p))&&!ins.some(p=>cp.has(p)))state.courtPlayers[q]=new Set(mp([...cp]))}
+  recalcMinutes(q);fxClose();touch();updateScore();renderVList();goTab(q);refreshQ(q);
+  showToast('✓ Cambio metido a las '+vFmt(T)+': sale '+outs.join(', ')+', entra '+ins.join(', ')+(ch.length?' (corregidos también '+ch.length+' quintetos siguientes)':'')+(moved?' · '+moved+' acciones pasadas a '+ins[0]:''))}
 vid.addEventListener('play',()=>{if(state.chg){vid.pause();showToast('⚠ Pulsa Confirmar cambios para seguir')}});
 /* minutos: tiempo real de cada tramo; al acabar el cuarto se escalan a 12 (prórroga: a sus minutos) */
 function recalcMinutes(q){const m=vMark(q);if(m.s==null)return false;const its=state.stints.filter(x=>x.q===q);
@@ -1359,6 +1434,7 @@ const V_RATES=[0.5,0.75,1,1.25,1.5,2,3];
 document.addEventListener('keydown',e=>{
   if(!document.body.classList.contains('has-video')||e.ctrlKey||e.metaKey||e.altKey)return;
   if(document.getElementById('vJg').classList.contains('on')){if(e.key==='Escape'){jgClose();e.preventDefault()}return}
+  if(document.getElementById('vFx').classList.contains('on')){if(e.key==='Escape'){fxClose();e.preventDefault()}return}
   if(document.querySelector('.v-modal.on'))return;
   const tg=e.target;if(tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.tagName==='SELECT'))return;
   const k=e.key;
