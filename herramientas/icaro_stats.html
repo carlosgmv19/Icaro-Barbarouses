@@ -61,7 +61,9 @@ header{background:var(--bg2);border-bottom:2px solid var(--accent);padding:0 16p
 .dec-chip.sel{border-color:var(--accent);background:rgba(249,115,22,.18);color:var(--accent)}
 /* APUNTE RÁPIDO: acción → jugador */
 .qa{display:flex;flex-direction:column;gap:6px}
-.qa-acts{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.qa-acts{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.qa-b.foul{grid-column:span 2;border-color:rgba(168,85,247,.5);color:#c084fc}
+.qa-p .fl{position:absolute;bottom:2px;right:5px;font-size:10px;color:#c084fc}.qa-p .fl.f4{color:var(--yellow)}.qa-p .fl.f5{color:var(--red);font-weight:900}
 .qa-b{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:15px;letter-spacing:.5px;padding:9px 2px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;line-height:1;transition:transform .08s,background .15s}
 .qa-b:active{transform:scale(.95)}
 .qa-b.made{border-color:rgba(34,197,94,.5);color:var(--green)}
@@ -95,7 +97,7 @@ header{background:var(--bg2);border-bottom:2px solid var(--accent);padding:0 16p
 .ar .who{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ar .x{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;width:26px;height:24px;cursor:pointer;flex:none}
 .ar .x:hover{border-color:var(--red);color:var(--red)}
-.ar.k-can .lb{color:var(--green)}.ar.k-fal .lb{color:#f87171}.ar.k-riv .lb{color:var(--red)}.ar.k-per .lb{color:var(--yellow)}.ar.k-jug .lb{color:var(--accent)}.ar.k-reb .lb,.ar.k-ast .lb,.ar.k-def .lb{color:var(--accent2)}
+.ar.k-flt .lb{color:#c084fc}.ar.k-can .lb{color:var(--green)}.ar.k-fal .lb{color:#f87171}.ar.k-riv .lb{color:var(--red)}.ar.k-per .lb{color:var(--yellow)}.ar.k-jug .lb{color:var(--accent)}.ar.k-reb .lb,.ar.k-ast .lb,.ar.k-def .lb{color:var(--accent2)}
 .al-empty{padding:14px;color:var(--muted);font-size:13px}
 .qs{margin:10px 12px 0;overflow-x:auto;border:1px solid var(--border);border-radius:10px}
 .qs table{width:100%;border-collapse:collapse;font-size:13px}
@@ -198,6 +200,8 @@ header{background:var(--bg2);border-bottom:2px solid var(--accent);padding:0 16p
 .cv-legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--muted)}
 .cv-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:1px solid var(--border)}
 .cv-add{display:flex;gap:6px;margin-top:10px}
+.btn-start{display:block;width:100%;max-width:420px;margin:14px 0 4px;padding:14px;border-radius:10px;border:none;background:var(--accent);color:#111;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer}
+.btn-start:hover{filter:brightness(1.1)}
 .cv-add input{flex:1;max-width:220px;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:6px;font-family:'Barlow',sans-serif;font-size:14px}
 .sec-title{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:14px 0 8px;border-top:1px solid var(--border);margin-top:14px}
 .sec-title:first-child{border-top:none;margin-top:0;padding-top:0}
@@ -450,6 +454,7 @@ document.body.appendChild(d)})})();
     <div class="cv-legend"><span><i style="background:rgba(34,197,94,.25);border-color:var(--green)"></i>Dijo "Voy seguro"</span><span><i style="background:rgba(234,179,8,.2);border-color:var(--yellow)"></i>"Seguramente vaya"</span><span><i></i>Sin responder</span><span><i style="border-color:rgba(239,68,68,.6)"></i>Dijo que no</span><span><i style="background:var(--accent);border-color:var(--accent)"></i>Convocado</span></div>
     <div class="cv-add"><input id="cvOther" placeholder="Otro jugador (invitado)" onkeydown="if(event.key==='Enter')cvAddOther()"><button class="btn-sec" style="margin:0" onclick="cvAddOther()">+ Añadir</button></div>
     <p class="hint">Pulsa un nombre para convocarlo (queda en naranja) y vuelve a pulsarlo para quitarlo. Primero salen los que dijeron en la web que van. Máximo 10.</p>
+    <button class="btn-start" id="btnStart" onclick="startMatch()">▶ Iniciar partido</button>
 
     <div class="sec-title">Partido guardado en este móvil</div>
     <p class="hint" id="saveInfo">Todo se guarda solo mientras apuntas: si se cierra el navegador no pierdes nada.</p>
@@ -575,7 +580,7 @@ function updateScore(){
   document.getElementById('scoreBox').innerHTML=`<span class="us">${us}</span> – <span class="them">${them}</span>`;
   if(document.body.classList.contains('has-video'))renderVList()}
 
-function initStat(p,q){if(!state.stats[p])state.stats[p]={};if(!state.stats[p][q])state.stats[p][q]={min:0,fg2m:0,fg2a:0,fg3m:0,fg3a:0,ftm:0,fta:0,rebd:0,rebo:0,ast:0,stl:0,blk:0,tov:0,plus:0,minus:0};return state.stats[p][q]}
+function initStat(p,q){if(!state.stats[p])state.stats[p]={};if(!state.stats[p][q])state.stats[p][q]={min:0,fg2m:0,fg2a:0,fg3m:0,fg3a:0,ftm:0,fta:0,rebd:0,rebo:0,ast:0,stl:0,blk:0,tov:0,fls:0,plus:0,minus:0};return state.stats[p][q]}
 function initTimes(q){if(!state.times[q])state.times[q]={s:'',tm1:'',tm2:'',f:''};return state.times[q]}
 function getEdit(p,q){return state.editMode[p]?.[q]||false}
 function activePlayers(){return state.players.filter(p=>p&&p.trim())}
@@ -628,10 +633,23 @@ function cvToggle(p){
   touch();renderSetup()}
 function cvAddOther(){const i=document.getElementById('cvOther');const n=i.value.trim();if(!n)return;
   if(!activePlayers().includes(n))cvToggle(n);i.value=''}
+// cuarto por el que seguir: el último con algo apuntado (o el siguiente si ya tiene marcado el fin en el vídeo)
+function qHas(q){if((state.opp[q]||0)>0||(state.acts||[]).some(a=>a.q===q))return true;
+  return activePlayers().some(p=>{const s=state.stats[p]?.[q];return s&&Object.keys(s).some(k=>s[k]>0)})}
+function qEnded(q){return!!(state.vmarks&&state.vmarks[q]&&state.vmarks[q].e!=null)}
+function nextQ(){const qs=QUARTERS.filter(q=>q!=='q5'||state.ot);let i=-1;qs.forEach((q,k)=>{if(qHas(q)||qEnded(q))i=k});
+  if(i<0)return{q:qs[0],i:0};if(qEnded(qs[i])&&i<qs.length-1)i++;return{q:qs[i],i,last:i===qs.length-1&&qEnded(qs[i])}}
+function startMatch(){const n=activePlayers().length;
+  if(n<5){showToast('⚠ Elige al menos 5 convocados (llevas '+n+')');return}
+  const{q}=nextQ();touch();goTab(q);window.scrollTo({top:0});
+  if(vid&&vid.getAttribute('src')){const sel=document.getElementById('vPer');if(sel){sel.value=q;vSyncC0()}}
+  showToast(state.courtPlayers[q].size?'▶ '+Q_LABELS[q]+' cuarto':'▶ '+Q_LABELS[q]+' cuarto: marca los 5 que empiezan en pista')}
 function renderSetup(){
   const g=document.getElementById('playersGrid');const sel=activePlayers();
   g.innerHTML=cvRoster().map(({p,e})=>`<button type="button" class="cv-btn ${e!=null?'st'+e:''} ${sel.includes(p)?'on':''}" aria-pressed="${sel.includes(p)}" onclick='cvToggle(${JSON.stringify(p).replace(/'/g,"&#39;")})'>${p.replace(/</g,'&lt;')}${e!=null?`<small>${CV_LBL[e]}</small>`:''}</button>`).join('');
   const c=document.getElementById('cvCount');if(c)c.textContent=sel.length?'· '+sel.length+' de 10':'· ninguno todavía';
+  const bs=document.getElementById('btnStart');if(bs){const nq=nextQ();
+    bs.textContent=nq.last?'▶ Ir al último cuarto':nq.i>0||qHas(nq.q)?'▶ Seguir partido · '+Q_LABELS[nq.q]+' cuarto':'▶ Iniciar partido';bs.style.opacity=sel.length>=5?1:.5}
 }
 
 function fillSetupInputs(){
@@ -728,17 +746,18 @@ function renderQuarter(q){
 /* ── APUNTE RÁPIDO: primero la acción, luego quién (de los 5 en pista).
    Al pulsar la acción el vídeo se para; al elegir jugador se apunta y sigue. ── */
 const QA_ACTS=[['fg2m','2 ✓','made'],['fg3m','3 ✓','made'],['ftm','TL ✓','made'],['rebd','REB D',''],['rebo','REB O',''],['ast','ASIST',''],
-  ['fg2a','2 ✗','miss'],['fg3a','3 ✗','miss'],['fta','TL ✗','miss'],['stl','ROBO',''],['blk','TAPÓN',''],['tov','PÉRDIDA','bad']];
+  ['stl','ROBO',''],['fg2a','2 ✗','miss'],['fg3a','3 ✗','miss'],['fta','TL ✗','miss'],['blk','TAPÓN',''],['tov','PÉRDIDA','bad'],['fls','FALTA','foul']];
 const QA_LBL=Object.fromEntries(QA_ACTS.map(x=>[x[0],x[1]]));
 const MISS_OF={fg2a:'fg2m',fg3a:'fg3m',fta:'ftm'};
 let qaPend=null; // {q,f,p,play,t}
 function qaCourt(q){const cp=state.courtPlayers[q];return activePlayers().filter(p=>cp.has(p))}
 function qaHTML(q){const pd=qaPend&&qaPend.q===q?qaPend:null;const on=qaCourt(q);
   const acts=QA_ACTS.map(([f,l,c])=>`<button class="qa-b ${c} ${pd&&pd.f===f?'sel':''}" onclick="qaAct('${q}','${f}')">${l}</button>`).join('');
-  const ps=[0,1,2,3,4].map(i=>on[i]!=null?`<button class="qa-p ${pd&&pd.p===on[i]?'sel':''}" onclick="qaPly('${q}',${i})" title="Tecla ${i+1}"><small>${i+1}</small>${on[i]}</button>`:`<button class="qa-p empty" disabled>—</button>`).join('');
+  const ps=[0,1,2,3,4].map(i=>on[i]!=null?`<button class="qa-p ${pd&&pd.p===on[i]?'sel':''}" onclick="qaPly('${q}',${i})" title="Tecla ${i+1}"><small>${i+1}</small>${on[i]}${qaFl(on[i])}</button>`:`<button class="qa-p empty" disabled>—</button>`).join('');
   const hint=pd&&pd.f?`<b>${QA_LBL[pd.f]}</b> · ¿de quién? (o tecla 1–5 · Esc cancela)`:pd&&pd.p?`<b>${pd.p}</b> · ¿qué ha hecho?`:
     on.length?'Pulsa la acción y después el jugador':'⚠ Marca arriba quién está en pista';
   return `<div class="qa-acts">${acts}</div><div class="qa-ply">${ps}</div><div class="qa-hint">${hint}</div>`}
+function qaFl(p){const n=QUARTERS.reduce((a,x)=>a+(state.stats[p]?.[x]?.fls||0),0);return n?`<span class="fl ${n>=5?'f5':n===4?'f4':''}" title="Faltas en el partido">${n}F</span>`:''}
 function qaPaint(q){const el=document.getElementById('qa-'+q);if(!el)return;el.innerHTML=qaHTML(q);el.classList.toggle('wait',!!(qaPend&&qaPend.q===q&&qaPend.f))}
 function qaAct(q,f){
   if(qaPend&&qaPend.q===q&&qaPend.p&&!qaPend.f){const p=qaPend.p,play=qaPend.play;qaPend=null;qaApply(q,p,f,vNow(),play);return}
@@ -754,7 +773,8 @@ function qaCancel(){if(!qaPend)return;const{q,play}=qaPend;qaPend=null;qaPaint(q
 function qaApply(q,p,f,t,play){
   if(!isOnCourt(p,q)){showToast('⚠ '+p+' no está en pista');qaPaint(q);return}
   const s=initStat(p,q);const snap=shotSnap(q);
-  s[f]++;if(ATT_OF[f])s[ATT_OF[f]]++;
+  s[f]=(s[f]||0)+1;if(ATT_OF[f])s[ATT_OF[f]]++;
+  if(f==='fls'){const n=QUARTERS.reduce((a,x)=>a+(state.stats[p]?.[x]?.fls||0),0);if(n>=5)setTimeout(()=>showToast('🟥 '+p+': 5 faltas, eliminado'),900);else if(n===4)setTimeout(()=>showToast('⚠ '+p+' lleva 4 faltas'),900)}
   shotDelta(q,snap);
   const a={id:state.aseq=(state.aseq||0)+1,t:t!=null?t:null,q,p,f};state.acts.push(a);
   if(PTS_OF[f])addPoints(q,'plus',PTS_OF[f],Object.assign({by:p,f},t!=null?{t}:{}));
@@ -778,10 +798,10 @@ document.addEventListener('keydown',e=>{if(!qaPend||e.ctrlKey||e.metaKey||e.altK
   else if(/^[1-5]$/.test(e.key)&&qaPend.f){qaPly(qaPend.q,+e.key-1);e.preventDefault();e.stopImmediatePropagation()}},true);
 
 /* ── LISTA DE ACCIONES del cuarto (con filtros y X para borrar) ── */
-const AF_KINDS=[['can','Canastas'],['fal','Fallos'],['reb','Rebotes'],['ast','Asistencias'],['def','Robos/tapones'],['per','Pérdidas'],['riv','Rival'],['jug','Jugadas ⭐']];
-const AF_DEF=['can','reb','ast','def','per','riv','jug'];
-function actKind(f){return PTS_OF[f]?'can':MISS_OF[f]?'fal':f==='rebd'||f==='rebo'?'reb':f==='ast'?'ast':f==='stl'||f==='blk'?'def':'per'}
-function afSel(){return Array.isArray(state.afilt)?state.afilt:AF_DEF}
+const AF_KINDS=[['can','Canastas'],['fal','Fallos'],['reb','Rebotes'],['ast','Asistencias'],['def','Robos/tapones'],['per','Pérdidas'],['flt','Faltas'],['riv','Rival'],['jug','Jugadas ⭐']];
+const AF_DEF=['can','reb','ast','def','per','flt','riv','jug'];
+function actKind(f){return PTS_OF[f]?'can':MISS_OF[f]?'fal':f==='rebd'||f==='rebo'?'reb':f==='ast'?'ast':f==='stl'||f==='blk'?'def':f==='fls'?'flt':'per'}
+function afSel(){if(Array.isArray(state.afilt)&&!state.afilt.includes('flt')&&!state.afiltF){state.afilt=state.afilt.concat('flt');state.afiltF=1}return Array.isArray(state.afilt)?state.afilt:AF_DEF}
 function afToggle(q,k){let f=afSel().slice();if(k==='all')f=f.length===AF_KINDS.length?AF_DEF.slice():AF_KINDS.map(x=>x[0]);
   else f=f.includes(k)?f.filter(x=>x!==k):f.concat(k);state.afilt=f;touch();renderALog(q)}
 function qActions(q){const out=[];
@@ -808,15 +828,15 @@ function vSeek(t){if(!vid||!vid.getAttribute('src'))return;vid.currentTime=Math.
 /* ── STATS DEL CUARTO (se actualizan al apuntar) ── */
 function renderQStats(q){const el=document.getElementById('qs-'+q);if(!el)return;
   const ps=activePlayers();const pct=(m,a)=>a?`${m}/${a}`:'–';
-  const row=(name,s,c,cls,mn)=>`<tr class="${cls}"><td>${name}</td><td>${mn}</td><td class="pts">${c.pts}</td><td>${pct(s.fg2m,s.fg2a)}</td><td>${pct(s.fg3m,s.fg3a)}</td><td>${pct(s.ftm,s.fta)}</td><td>${s.rebd}</td><td>${s.rebo}</td><td>${s.ast}</td><td>${s.stl}</td><td>${s.blk}</td><td>${s.tov}</td><td>${c.pm>0?'+':''}${Math.round(c.pm*10)/10}</td><td>${Math.round(c.eff*10)/10}</td></tr>`;
+  const row=(name,s,c,cls,mn)=>`<tr class="${cls}"><td>${name}</td><td>${mn}</td><td class="pts">${c.pts}</td><td>${pct(s.fg2m,s.fg2a)}</td><td>${pct(s.fg3m,s.fg3a)}</td><td>${pct(s.ftm,s.fta)}</td><td>${s.rebd}</td><td>${s.rebo}</td><td>${s.ast}</td><td>${s.stl}</td><td>${s.blk}</td><td>${s.tov}</td><td>${s.fls||0}</td><td>${c.pm>0?'+':''}${Math.round(c.pm*10)/10}</td><td>${Math.round(c.eff*10)/10}</td></tr>`;
   const fm=v=>{v=v||0;return v%1===0?String(v):String(Math.round(v*100)/100)};
-  const body=ps.map(p=>{const s=initStat(p,q);const c=computed(s);const used=isOnCourt(p,q)||s.min||s.plus||s.minus||SHOT.concat(['rebd','rebo','ast','stl','blk','tov']).some(k=>s[k]);
+  const body=ps.map(p=>{const s=initStat(p,q);const c=computed(s);const used=isOnCourt(p,q)||s.min||s.plus||s.minus||SHOT.concat(['rebd','rebo','ast','stl','blk','tov','fls']).some(k=>s[k]);
     return row(p,s,c,isOnCourt(p,q)?'on':used?'':'idle',fm(s.min))}).join('');
-  const tot={fg2m:0,fg2a:0,fg3m:0,fg3a:0,ftm:0,fta:0,rebd:0,rebo:0,ast:0,stl:0,blk:0,tov:0,plus:0,minus:0};
+  const tot={fg2m:0,fg2a:0,fg3m:0,fg3a:0,ftm:0,fta:0,rebd:0,rebo:0,ast:0,stl:0,blk:0,tov:0,fls:0,plus:0,minus:0};
   ps.forEach(p=>{const s=initStat(p,q);Object.keys(tot).forEach(k=>tot[k]+=s[k]||0)});
   const ct=computed(tot);ct.pm=(state.courtPlayers[q].size?0:0);
   const our=ct.pts,opp=state.opp[q]||0;
-  el.innerHTML=`<table><thead><tr><th>${Q_LABELS[q]} cuarto</th><th>MIN</th><th>PTS</th><th>2P</th><th>3P</th><th>TL</th><th>RD</th><th>RO</th><th>AST</th><th>ROB</th><th>TAP</th><th>PÉR</th><th>+/−</th><th>EFF</th></tr></thead><tbody>${body}</tbody>
+  el.innerHTML=`<table><thead><tr><th>${Q_LABELS[q]} cuarto</th><th>MIN</th><th>PTS</th><th>2P</th><th>3P</th><th>TL</th><th>RD</th><th>RO</th><th>AST</th><th>ROB</th><th>TAP</th><th>PÉR</th><th>FAL</th><th>+/−</th><th>EFF</th></tr></thead><tbody>${body}</tbody>
     <tfoot>${row('Total',tot,Object.assign(ct,{pm:our-opp}),'tot','')}</tfoot></table>`}
 
 function playerCardHTML(p,q){
@@ -850,7 +870,7 @@ function playerCardHTML(p,q){
 }
 
 function editInputsHTML(p,q,s){
-  const fields=[['MIN','min',0.25],['2✓','fg2m',1],['2✗','fg2a',1],['3✓','fg3m',1],['3✗','fg3a',1],['TL✓','ftm',1],['TL✗','fta',1],['Reb Def','rebd',1],['Reb Of','rebo',1],['Asist','ast',1],['Robo','stl',1],['Tapón','blk',1],['Pérdida','tov',1],['+','plus',1],['-','minus',1]];
+  const fields=[['MIN','min',0.25],['2✓','fg2m',1],['2✗','fg2a',1],['3✓','fg3m',1],['3✗','fg3a',1],['TL✓','ftm',1],['TL✗','fta',1],['Reb Def','rebd',1],['Reb Of','rebo',1],['Asist','ast',1],['Robo','stl',1],['Tapón','blk',1],['Pérdida','tov',1],['Faltas','fls',1],['+','plus',1],['-','minus',1]];
   return fields.map(([l,k,step])=>`<div class="edit-field"><label>${l}</label><input type="number" min="0" step="${step}" value="${s[k]||0}" onchange="editDirect('${p}','${q}','${k}',+this.value)"></div>`).join('')
 }
 
@@ -1043,9 +1063,9 @@ function delStint(i){if(!confirm('¿Borrar este tramo?'))return;const s=state.st
 function buildPayload(){
   const players=activePlayers();const box=[];
   QUARTERS.forEach((q,qi)=>players.forEach(p=>{const s=initStat(p,q);const c=computed(s);
-    const any=(s.min||0)>0||['fg2a','fg3a','fta','rebd','rebo','ast','stl','blk','tov','plus','minus'].some(k=>s[k]>0);if(!any)return;
+    const any=(s.min||0)>0||['fg2a','fg3a','fta','rebd','rebo','ast','stl','blk','tov','fls','plus','minus'].some(k=>s[k]>0);if(!any)return;
     box.push({Temporada:state.temporada,PartidoID:state.partidoId,Jugador:p,Cuarto:qi+1,MIN:s.min||0,PTS:c.pts,FGM:c.fgm,FGA:c.fga,'3PM':s.fg3m,'3PA':s.fg3a,FTM:s.ftm,FTA:s.fta,
-      REBO:s.rebo,REBD:s.rebd,AST:s.ast,STL:s.stl,BLK:s.blk,TOV:s.tov,'+':s.plus,'-':s.minus})}));
+      REBO:s.rebo,REBD:s.rebd,AST:s.ast,STL:s.stl,BLK:s.blk,TOV:s.tov,FAL:s.fls||0,'+':s.plus,'-':s.minus})}));
   const quintetos=state.stints.filter(stUsed).map((s,i)=>{const r={Temporada:state.temporada,PartidoID:state.partidoId,Cuarto:QUARTERS.indexOf(s.q)+1,Tramo:i+1,MIN:s.min||0,PF:s.pf,PC:s.pc,T2M:s.fg2m||0,T2A:s.fg2a||0,T3M:s.fg3m||0,T3A:s.fg3a||0,TLM:s.ftm||0,TLA:s.fta||0};
     s.players.forEach((p,k)=>r['J'+(k+1)]=p);return r});
   const partido={Rival:state.rival,Fecha:state.date,Estado:'Jugado',Fase:state.partidoId.includes('-PO')?'Playoffs':undefined};
