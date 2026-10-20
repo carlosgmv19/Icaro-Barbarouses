@@ -190,3 +190,10 @@ table.t td.strong{font-weight:700;color:var(--tx)}
 .ins-f{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:6px}
 .ins-c{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
 .ins-c.ok{color:#4ade80;border-color:rgba(74,222,128,.4)}.ins-c.mid{color:var(--acc);border-color:var(--accline)}.ins-c.low{color:var(--mut)}
+/* botón de desplegar columnas: separado del de ordenar y con su propia caja */
+table.t th .xbtn{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:10px;width:24px;height:22px;border:1px solid var(--accline);border-radius:6px;background:var(--accbg2);color:var(--acc);font:700 15px/1 Barlow;cursor:pointer;padding:0}
+table.t th .xbtn:hover{background:var(--acc);color:var(--ink);border-color:var(--acc)}
+table.t th .xbtn.on{background:var(--acc);color:var(--ink);border-color:var(--acc)}
+/* fila del equipo al final de Estadísticas */
+table.t tr.teamrow td{border-top:2px solid var(--acc);font-weight:700;color:var(--acc2);background:var(--card2)}
+table.t tr.teamrow td.grp{background:#2B2310}

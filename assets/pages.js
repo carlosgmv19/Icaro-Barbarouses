@@ -332,8 +332,8 @@ const EXPAND_KEY = { REB: 'rx', FGp: 'xFG', TPp: 'xTP', FTp: 'xFT' };
 function statTable(season, view, rx, sortK) {
   const fase = view === 'maximos' ? null : 'Liga';
   const sp = seasonPlayers(season, fase), m = minPJ(season);
-  const mx = (p, k) => { const t = sp[p].lines.filter(l => l[k] != null).sort((a, b) => b[k] - a[k])[0]; return t || null; };
-  const shotMax = (p, mk, ak, minA) => { const t = sp[p].lines.filter(l => (l[ak] || 0) >= minA).map(l => ({ l, v: l[mk] / l[ak] })).sort((a, b) => b.v - a.v)[0]; return t || null; };
+  const mx = (a, k) => { const t = a.lines.filter(l => l[k] != null).sort((a, b) => b[k] - a[k])[0]; return t || null; };
+  const shotMax = (a, mk, ak, minA) => { const t = a.lines.filter(l => (l[ak] || 0) >= minA).map(l => ({ l, v: l[mk] / l[ak] })).sort((a, b) => b.v - a.v)[0]; return t || null; };
   let cols;
   if (view === 'medias' || view === 'p36') cols = [['MIN', 'MIN'], ['PTS', 'PTS'], ['REB', 'REB'], ['AST', 'AST'], ['STL', 'ROB'], ['BLK', 'TAP'], ['TOV', 'PÉR', 'low'], ['PM', '+/−'], ['FGp', 'TC%', 'pct'], ['TPp', 'T3%', 'pct'], ['FTp', 'TL%', 'pct'], ['EFF', 'EFF'], ['VAL', 'VAL']];
   else if (view === 'avanzadas') cols = [['FGp', 'TC%', 'pct'], ['TPp', 'T3%', 'pct'], ['FTp', 'TL%', 'pct'], ['eFG', 'eFG%', 'pct'], ['TS', 'TS%', 'pct'], ['ATO', 'AST/PÉR'], ['r3', '% triples', 'pct'], ['ftr', '% libres', 'pct'], ['EFF', 'EFF']];
@@ -343,26 +343,33 @@ function statTable(season, view, rx, sortK) {
   Object.keys(EXPAND).forEach(g => { if (!ex[g]) return; const i = cols.findIndex(c => c[0] === g); if (i < 0) return;
     cols[i] = cols[i].slice(0, 3).concat([g, 'first']); const kids = EXPAND[g].map(([k, l], j, a) => [k, l, 'split', g, j === a.length - 1 ? 'last' : 'mid']);
     cols.splice(i + 1, 0, ...kids); });
-  const val = (p, k) => {
-    const a = sp[p];
+  const valA = (a, k, team) => {
     if (view === 'maximos') {
-      if (k === 'FGp') { const t = shotMax(p, 'FGM', 'FGA', 4); return t ? { v: t.v, l: t.l } : null; }
-      if (k === 'TPp') { const t = shotMax(p, '3PM', '3PA', 3); return t ? { v: t.v, l: t.l } : null; }
-      if (k === 'FTp') { const t = shotMax(p, 'FTM', 'FTA', 2); return t ? { v: t.v, l: t.l } : null; }
-      const t = mx(p, k); return t ? { v: t[k], l: t } : null;
+      if (k === 'FGp') { const t = shotMax(a, 'FGM', 'FGA', team ? 15 : 4); return t ? { v: t.v, l: t.l } : null; }
+      if (k === 'TPp') { const t = shotMax(a, '3PM', '3PA', team ? 8 : 3); return t ? { v: t.v, l: t.l } : null; }
+      if (k === 'FTp') { const t = shotMax(a, 'FTM', 'FTA', team ? 6 : 2); return t ? { v: t.v, l: t.l } : null; }
+      const t = mx(a, k); return t ? { v: t[k], l: t } : null;
     }
     if (['FGp', 'TPp', 'FTp', 'eFG', 'TS', 'ATO', 'r3', 'ftr'].includes(k)) return { v: a[k] };
     if (view === 'avanzadas' && k === 'EFF') return { v: a.avg.EFF };
     if (view === 'p36' && k !== 'MIN') return { v: a.p36[k] };
     return { v: a.avg[k] };
   };
+  const val = (p, k) => valA(sp[p], k);
+  // el equipo: una "línea" por partido sumando a todos (minutos y +/− entre 5: los del equipo)
+  const byG = {}; linesOf(season, { fase }).forEach(l => (byG[l.gid] = byG[l.gid] || []).push(l));
+  const tLines = Object.values(byG).map(ls => { const o = { gid: ls[0].gid, g: ls[0].g, p: 'Equipo' };
+    SK.forEach(k => { const v = ls.filter(l => l[k] != null); o[k] = v.length ? sum(v, l => l[k]) : null; });
+    if (o.MIN != null) o.MIN /= 5; if (o.PM != null) o.PM /= 5; return o; });
+  const team = Object.assign(agg(tLines), { lines: tLines });
+  const teamVal = k => valA(team, k, true);
   const names = Object.keys(sp);
   const qual = names.filter(p => sp[p].gp >= m);
   const best = {}; cols.forEach(([k, , f]) => { const vs = qual.map(p => (val(p, k) || {}).v).filter(isNum); best[k] = vs.length ? (f === 'low' ? Math.min(...vs) : Math.max(...vs)) : null; });
   const sk = sortK || cols[1] && cols[1][0];
   names.sort((a, b) => ((sp[b].gp >= m) - (sp[a].gp >= m)) || (((val(b, sk) || {}).v ?? -1e9) - ((val(a, sk) || {}).v ?? -1e9)) * ((cols.find(c => c[0] === sk) || [])[2] === 'low' ? -1 : 1));
   const fmt = (k, v, f) => f === 'pct' ? pc(v) : k === 'PM' ? sg(v) : view === 'maximos' ? nf(v) : n1(v);
-  return { sp, names, cols, val, best, m, fmt, sk };
+  return { sp, names, cols, val, best, m, fmt, sk, team, teamVal };
 }
 PAGES.estadisticas = R => {
   const view = STAT_VIEWS.some(v => v[0] === R.arg) ? R.arg : 'medias';
@@ -375,10 +382,12 @@ PAGES.estadisticas = R => {
   const gcls = c => c[3] ? 'grp g-' + c[4] : '';
   const th = T.cols.map(c => { const [k, l] = c; const xk = EXPAND_KEY[k];
     if (xk && view !== 'maximos' || k === 'REB') { const open = !!c[3]; const tip = k === 'REB' ? 'ofensivos y defensivos' : 'metidos e intentados';
-      return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button><button class="rxbtn" ${on(xk, !open)} title="${open ? 'Ocultar' : 'Ver'} ${tip}">${open ? '‹' : '›'}</button></th>`; }
+      return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button><button class="xbtn ${open ? 'on' : ''}" ${on(xk, !open)} title="${open ? 'Ocultar' : 'Ver'} ${tip}" aria-label="${open ? 'Ocultar' : 'Ver'} ${tip}">${open ? '−' : '+'}</button></th>`; }
     return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button></th>`; }).join('');
+  const teamRow = T.team.gp ? `<tr class="teamrow"><td>Equipo</td><td>${T.team.gp}</td>${T.cols.map(c => { const [k, , f] = c; const x = T.teamVal(k) || {}; return `<td class="${gcls(c)}">${T.fmt(k, x.v, f)}</td>`; }).join('')}</tr>` : '';
   const rows = T.names.map(p => `<tr class="${T.sp[p].gp < T.m ? 'dimrow' : ''}"><td>${plink(p)}</td><td>${T.sp[p].gp}</td>${T.cols.map(c => { const [k, , f] = c; const x = T.val(p, k) || {}; return `<td class="${T.sp[p].gp >= T.m && isNum(x.v) && x.v === T.best[k] ? 'best' : ''} ${gcls(c)}">${T.fmt(k, x.v, f)}</td>`; }).join('')}</tr>`).join('');
-  const notes = { medias: 'Media por partido jugado. TC%, T3% y TL% son los porcentajes de toda la temporada; con › al lado se despliegan los tiros metidos e intentados por partido.', p36: 'Por 36 minutos. La columna MIN muestra los minutos reales por partido como referencia.', avanzadas: '% triples = qué parte de sus tiros son triples. % libres = tiros libres intentados por cada tiro de campo.', maximos: 'Mejor marca de cada jugador en un solo partido. En TC%, T3% y TL% cuentan partidos con un mínimo de intentos (4, 3 y 2).' };
+  const teamNote = { medias: 'Equipo: lo que hace el equipo entero por partido (sus minutos son los del partido; +/−, la diferencia media en el marcador).', p36: 'Equipo: el equipo entero por cada 36 minutos de partido.', avanzadas: 'Equipo: porcentajes y ratios del equipo entero.', maximos: 'Equipo: su mejor partido en cada stat (en TC%, T3% y TL%, con un mínimo de 15, 8 y 6 intentos).' };
+  const notes = { medias: 'Media por partido jugado. TC%, T3% y TL% son los porcentajes de toda la temporada; con el botón + al lado se despliegan los tiros metidos e intentados (y en REB, los defensivos y ofensivos).', p36: 'Por 36 minutos. La columna MIN muestra los minutos reales por partido como referencia.', avanzadas: '% triples = qué parte de sus tiros son triples. % libres = tiros libres intentados por cada tiro de campo.', maximos: 'Mejor marca de cada jugador en un solo partido. En TC%, T3% y TL% cuentan partidos con un mínimo de intentos (4, 3 y 2).' };
   let extra = '';
   if (view === 'maximos') {
     const wcols = T.cols.filter(c => c[2] !== 'split');
@@ -392,8 +401,8 @@ PAGES.estadisticas = R => {
   const recs = RK.map(([k, l]) => { const t = sl.filter(x => x[k] != null).sort((a, b) => b[k] - a[k])[0]; return t && t[k] ? `<a href="#/partido/${encodeURIComponent(t.gid)}" class="card sm" style="color:var(--tx)"><div class="lbl">${l}</div><div class="big acc" style="font-size:40px">${nf(t[k])}</div><div style="font-weight:700">${esc(t.p)}</div><div class="small mut">vs ${esc(t.g.rival)} · ${fd(t.g.date)}</div></a>` : ''; }).join('');
   return `<div class="pagehead"><div><h1>Estadísticas</h1><div class="sub">${sub}</div></div>
     <div class="pills">${STAT_VIEWS.map(([k, l]) => `<button type="button" class="${view === k ? 'on' : ''}" onclick="go('estadisticas/${k}')">${l}</button>`).join('')}</div></div>
-  <section class="sec">${T.names.length ? `<div class="tw"><table class="t sticky1"><tr><th>Jugador</th><th>PJ</th>${th}</tr>${rows}</table></div>
-    <div class="note" style="margin-top:10px">${notes[view]} Atenuados: menos de ${T.m} partidos. Pulsa una columna para ordenar.</div>` : '<div class="empty">Aún no hay partidos jugados en esta temporada.</div>'}</section>
+  <section class="sec">${T.names.length ? `<div class="tw"><table class="t sticky1"><tr><th>Jugador</th><th>PJ</th>${th}</tr>${rows}${teamRow}</table></div>
+    <div class="note" style="margin-top:10px">${notes[view]} ${teamNote[view]} Atenuados: menos de ${T.m} partidos. Pulsa una columna para ordenar.</div>` : '<div class="empty">Aún no hay partidos jugados en esta temporada.</div>'}</section>
   ${extra}
   ${recs ? `<section class="sec"><div class="between" style="margin-bottom:14px"><h2>Récords de un partido</h2><span class="note">Mejores marcas individuales de la temporada, playoffs incluidos</span></div><div class="grid g4" style="gap:12px">${recs}</div></section>` : ''}
   <section class="sec grid g4" style="gap:14px">
