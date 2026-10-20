@@ -373,8 +373,7 @@ document.body.appendChild(d)})})();
     <button onclick="fxOpen()" title="Mete un cambio que se te olvidó apuntar, en el momento del vídeo en que pasó, sin borrar nada">⏪ Cambio olvidado</button>
     <button id="vBrk" onclick="vBreak()" title="Descanso entre cuartos, lesión o parón: el vídeo avanza rápido; al volver el juego, retrocede 10 s para marcar el momento exacto">⏩ Descanso / parón</button>
     <button id="vPauseBtn" onclick="vPause()" title="Para o reanuda el reloj del cuarto">⏸ Parar reloj</button>
-    <button id="vTMh" onclick="vTM('h')" title="Tiempo muerto de Icaro: para el reloj del partido y empieza la cuenta atrás">⏱ TM Icaro</button>
-    <button id="vTMa" onclick="vTM('a')" title="Tiempo muerto del rival: para el reloj del partido y empieza la cuenta atrás">⏱ TM rival</button>
+    <button id="vTMx" onclick="vTM('x')" title="Tiempo muerto (de cualquiera de los dos equipos): para el reloj del partido y empieza la cuenta atrás. Vuelve a pulsarlo para acabarlo antes">⏱ Tiempo muerto</button>
     <label>TM (s)<input id="vTMLen" type="number" min="10" max="180" step="5" onchange="vCfg()"></label>
     <label>min/cuarto<input id="vQLen" type="number" min="1" max="20" step="1" onchange="vCfg()"></label>
     <label>prórroga<input id="vPrLen" type="number" min="1" max="10" step="1" onchange="vCfg()"></label>
@@ -1221,9 +1220,9 @@ function paintBoard(){
   if(sig!==vSig){vSig=sig;document.getElementById('vbH').textContent=n.h;document.getElementById('vbA').textContent=n.a;
     document.getElementById('vbHp').textContent=sc.h;document.getElementById('vbAp').textContent=sc.a;
     document.getElementById('vbQ').textContent=P_LBL[ck.p]+' '+ck.txt;
-    const et=document.getElementById('vbTM');et.style.display=tm?'block':'none';if(tm)et.textContent='Tiempo muerto · '+(tm.k==='h'?n.h:n.a)+' · '+mmss(tm.rem);
+    const et=document.getElementById('vbTM');et.style.display=tm?'block':'none';if(tm)et.textContent='Tiempo muerto'+(tm.k==='h'||tm.k==='a'?' · '+(tm.k==='h'?n.h:n.a):'')+' · '+mmss(tm.rem);
     const er=document.getElementById('vbRun');er.style.display=run?'block':'none';if(run)er.innerHTML='Parcial <b>'+run.x+'-'+run.y+'</b> '+(run.k==='h'?n.h:n.a);
-    ['h','a'].forEach(k=>{const b=document.getElementById('vTM'+k);const lbl=tm?'⏹ Acabar TM':(k==='h'?'⏱ TM Icaro':'⏱ TM rival');if(b.textContent!==lbl)b.textContent=lbl;b.classList.toggle('on',!!tm)})}
+    ['x'].forEach(k=>{const b=document.getElementById('vTM'+k);const lbl=tm?'⏹ Acabar tiempo muerto':'⏱ Tiempo muerto';if(b.textContent!==lbl)b.textContent=lbl;b.classList.toggle('on',!!tm)})}
   const cb=document.getElementById('vChg');const cl=state.chg?'✓ Confirmar cambios':'🔁 Cambio';if(cb.textContent!==cl){cb.textContent=cl;cb.classList.toggle('on',!!state.chg)}
   const bar=document.getElementById('vChgBar');const bt=state.chg?'🔁 Cambio en curso ('+Q_LABELS[state.chg.q]+'): vídeo y reloj parados. En "En pista" quita a los que salen y marca a los que entran, y pulsa Confirmar cambios para seguir.':'';
   if(bar.textContent!==bt){bar.textContent=bt;bar.style.display=bt?'block':'none'}
@@ -1243,7 +1242,7 @@ function renderVList(){
   const mkn=document.getElementById('vMkN');if(mkn)mkn.textContent=(state.marks||[]).length?'('+state.marks.length+')':'';
   PERIODS.forEach(p=>{const m=vMark(p);if(m.s!=null)items.push({t:m.s,mk:'Inicio '+P_LBL[p],del:`vClear('${p}','s')`});
     if(m.e!=null)items.push({t:m.e,mk:'Fin '+P_LBL[p],del:`vClear('${p}','e')`});
-    (m.pauses||[]).forEach((x,k)=>items.push({t:x[0],mk:(x[2]&&x[2].tm?'Tiempo muerto '+(x[2].tm==='h'?n.h:n.a)+' · '+Math.round(x[1]-x[0])+' s':(x[2]&&x[2].chg?'Cambio':x[2]&&x[2].paron?'Descanso / parón':'Reloj parado')+(x[1]==null?' (sin reanudar)':' '+Math.round(x[1]-x[0])+' s')),del:`vClear('${p}','p',${k})`}))});
+    (m.pauses||[]).forEach((x,k)=>items.push({t:x[0],mk:(x[2]&&x[2].tm?'Tiempo muerto'+(x[2].tm==='h'||x[2].tm==='a'?' '+(x[2].tm==='h'?n.h:n.a):'')+' · '+Math.round(x[1]-x[0])+' s':(x[2]&&x[2].chg?'Cambio':x[2]&&x[2].paron?'Descanso / parón':'Reloj parado')+(x[1]==null?' (sin reanudar)':' '+Math.round(x[1]-x[0])+' s')),del:`vClear('${p}','p',${k})`}))});
   items.sort((a,b)=>a.t-b.t);let h=0,a=0;
   el.innerHTML=items.length?items.map(it=>{let what,del;
     if(it.ev!=null){const e=state.vev[it.ev];if(e.k==='h')h+=e.p;else a+=e.p;what=`<span><strong style="color:${e.k==='h'?'var(--green)':'var(--red)'}">+${e.p}</strong> ${e.k==='h'?(e.by?e.by+' <span style="color:var(--muted)">('+n.h+')</span>':n.h):n.a}</span>`;del=`vDelEv(${it.ev})`}
@@ -1553,7 +1552,7 @@ function buildAss(){
   const sm='{\\fs'+Math.round(fs*0.72)+'}';
   const txt=t=>{const sc=scoreAt(t),ck=clockAt(t),tm=tmAt(t),run=runAt(t);
     let x='{\\an'+POS[posAt(t)][1]+'}'+cl(n.h)+'  {\\c&H1673F9&}'+sc.h+'{\\c&HFFFFFF&} - '+sc.a+'  '+cl(n.a)+'   {\\c&HE1D5CB&}'+P_LBL[ck.p]+' '+ck.txt+'{\\c&HFFFFFF&}';
-    if(tm)x+='\\N'+sm+'{\\c&H08B3EA&}Tiempo muerto · '+cl(tm.k==='h'?n.h:n.a)+' · '+mmss(tm.rem)+'{\\fs'+fs+'}{\\c&HFFFFFF&}';
+    if(tm)x+='\\N'+sm+'{\\c&H08B3EA&}Tiempo muerto'+(tm.k==='h'||tm.k==='a'?' · '+cl(tm.k==='h'?n.h:n.a):'')+' · '+mmss(tm.rem)+'{\\fs'+fs+'}{\\c&HFFFFFF&}';
     if(run)x+='\\N'+sm+'Parcial {\\c&H1673F9&}'+run.x+'-'+run.y+'{\\c&HFFFFFF&} '+cl(run.k==='h'?n.h:n.a)+'{\\fs'+fs+'}';
     return x};
   const cuts=new Set();const STEP=0.2;for(let i=0;i*STEP<end;i++)cuts.add(Math.round(i*STEP*100)/100);
