@@ -129,7 +129,7 @@ PAGES.quintetos = () => {
   const onoff = players.map(p => { const onL = L.filter(r => r.five.includes(p)), off = L.filter(r => !r.five.includes(p));
     const m1 = sum(onL, r => r.min), m0 = sum(off, r => r.min); const n1 = m1 ? sum(onL, r => r.pf - r.pc) * 36 / m1 : null, n0 = m0 ? sum(off, r => r.pf - r.pc) * 36 / m0 : null;
     return { p, m1, m0, n1, n0, d: isNum(n1) && isNum(n0) ? n1 - n0 : null }; }).sort((a, b) => (b.d ?? -1e9) - (a.d ?? -1e9));
-  return head + `<section class="sec stack" style="gap:16px">
+  return head + qInsights(L, M, combos, blank, add, onoff) + `<section class="sec stack" style="gap:16px">
     <div class="row" style="gap:24px;flex-wrap:wrap">
       <div class="chips"><span class="small mut" style="align-self:center">Ver</span>${[[5, 'Quintetos'], [3, 'Tríos'], [2, 'Parejas']].map(([k, l]) => `<button type="button" class="chip ${K === k ? 'on' : ''}" ${on('q.k', k)}>${l}</button>`).join('')}</div>
       <div class="chips"><span class="small mut" style="align-self:center">Stats</span>${[['res', 'Resumen'], ['tiro', 'Tiro'], ['juego', 'Juego']].map(([k, l]) => `<button type="button" class="chip ${view === k ? 'on' : ''}" ${on('q.v', k)}>${l}</button>`).join('')}</div>
@@ -153,6 +153,39 @@ PAGES.quintetos = () => {
         <div><b>Ritmo</b>: cuántos ataques propios hacen en 36 minutos.</div>
       </div></div></section>`;
 };
+
+/* "Lo que dicen los números": las stats de quintetos contadas para quien no sabe de datos */
+function qInsights(L, M, combos, blank, add, onoff) {
+  const group = k => { const by = {}; L.forEach(r => combos(r.five, k).forEach(c => { const key = c.join('|'); const a = by[key] || (by[key] = Object.assign(blank(), { five: c })); add(a, r); })); return Object.values(by).map(a => Object.assign(a, { m: M(a) })); };
+  const Q = group(5), T3 = group(3), totMin = sum(L, r => r.min);
+  const need5 = Math.max(8, totMin * 0.04), need3 = Math.max(20, totMin * 0.10);  // mínimo de minutos para que cuente
+  const q5 = Q.filter(a => a.min >= need5), q3 = T3.filter(a => a.min >= need3);
+  const conf = m => m >= 40 ? ['Bastante fiable', 'ok'] : m >= 20 ? ['Orientativo', 'mid'] : ['Pocos minutos todavía', 'low'];
+  const names = a => a.five.map(p => plink(p)).join(a.five.length === 5 ? ' · ' : ' + ');
+  const per10 = v => v * 10 / 36;   // las stats van por 36 minutos; aquí se cuentan "cada 10 minutos", que se entiende mejor
+  const n0 = v => nf(Math.abs(Math.round(v)), 0), n1a = v => nf(Math.abs(v), 1);
+  const best = (arr, key, low) => arr.filter(a => isNum(a.m[key])).sort((a, b) => low ? a.m[key] - b.m[key] : b.m[key] - a.m[key])[0];
+  const cards = [];
+  const card = (ico, t, a, txt, extra) => cards.push(`<div class="card ins"><div class="ins-h"><span class="ins-i">${ico}</span><span class="lbl">${t}</span></div>
+    <div class="ins-who">${names(a)}</div><div class="ins-t">${txt}</div>
+    <div class="ins-f"><span class="ins-c ${conf(a.min)[1]}">${conf(a.min)[0]}</span><span class="small mut">${nf(a.min)} min juntos${extra ? ' · ' + extra : ''}</span></div></div>`);
+  let a;
+  if ((a = best(q5, 'net'))) card('🏆', 'El quinteto que mejor funciona', a, a.m.net > 0 ? `Cuando están los cinco juntos, le sacamos <b>${n1a(per10(a.m.net))} puntos</b> al rival cada 10 minutos.` : `Es el que menos pierde: <b>${n1a(per10(a.m.net))} puntos</b> abajo cada 10 minutos.`, `${a.pf}–${a.pc} en total`);
+  if ((a = best(q5, 'ortg'))) card('🔥', 'El que mejor ataca', a, `De cada 10 ataques sacan <b>${nf(a.m.ortg / 10, 1)} puntos</b>. El equipo, de media, ${nf(qTeam(L, M, blank, add).ortg / 10, 1)}.`);
+  else if ((a = best(q5, 'pf36'))) card('🔥', 'El que mejor ataca', a, `Anotan <b>${n1a(per10(a.m.pf36))} puntos</b> cada 10 minutos. El equipo, de media, ${n1a(per10(qTeam(L, M, blank, add).pf36))}.`);
+  if ((a = best(q5, 'pc36', true))) card('🛡️', 'El que mejor defiende', a, `Con ellos en pista el rival solo anota <b>${n1a(per10(a.m.pc36))} puntos</b> cada 10 minutos (de media nos meten ${n1a(per10(qTeam(L, M, blank, add).pc36))}).`);
+  if ((a = best(q3, 'astto'))) card('🤝', 'El trío que mejor mueve el balón', a, a.m.ast0 ? `<b>${a.m.ast0} asistencias y ninguna pérdida</b> mientras han estado juntos.` : `Dan <b>${nf(a.m.astto, 1)} asistencias por cada balón perdido</b>. El equipo, de media, ${nf(qTeam(L, M, blank, add).astto, 1)}.`);
+  if ((a = best(q3, 'efg'))) card('🎯', 'El trío con mejor puntería', a, `Con los tres en pista metemos el <b>${pc0(a.m.efg)}</b> de los tiros (contando que el triple vale más). El equipo, ${pc0(qTeam(L, M, blank, add).efg)}.`);
+  const ok = onoff.filter(o => isNum(o.d) && o.m1 >= need3 && o.m0 >= 30);
+  if (ok.length) { const o = ok[0]; cards.push(`<div class="card ins"><div class="ins-h"><span class="ins-i">⭐</span><span class="lbl">El que más mejora al equipo</span></div>
+    <div class="ins-who">${plink(o.p)}</div><div class="ins-t">Con él en pista vamos <b>${n1a(per10(o.n1))} puntos ${o.n1 >= 0 ? 'arriba' : 'abajo'}</b> cada 10 minutos; sin él, ${n1a(per10(o.n0))} ${o.n0 >= 0 ? 'arriba' : 'abajo'}. Una diferencia de <b>${n1a(per10(o.d))} puntos</b>.</div>
+    <div class="ins-f"><span class="ins-c ${conf(Math.min(o.m1, o.m0))[1]}">${conf(Math.min(o.m1, o.m0))[0]}</span><span class="small mut">${nf(o.m1)} min en pista</span></div></div>`); }
+  if ((a = best(q5, 'net', true)) && a.m.net < 0) card('⚠️', 'El que peor está funcionando', a, `Juntos perdemos <b>${n1a(per10(a.m.net))} puntos</b> cada 10 minutos. ${a.m.pc36 > qTeam(L, M, blank, add).pc36 ? 'Sobre todo porque nos meten más de lo normal.' : 'Sobre todo porque anotamos menos de lo normal.'}`, `${a.pf}–${a.pc} en total`);
+  if (!cards.length) return `<section class="sec"><div class="card ins-empty"><h3>Lo que dicen los números</h3><div class="note">Todavía no hay suficientes minutos de un mismo quinteto para sacar conclusiones. Aparecerán solas según se apunten partidos.</div></div></section>`;
+  return `<section class="sec stack" style="gap:14px"><div><h2 style="margin:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap">Lo que dicen los números <span class="badge" style="background:var(--accbg);color:var(--acc2);font-size:12px">En pruebas</span></h2><div class="sub" style="margin-top:4px">Resumen en cristiano de las tablas de abajo. Solo cuentan los grupos que han jugado juntos al menos ${nf(Math.round(need5))} minutos (quintetos) o ${nf(Math.round(need3))} (tríos).</div></div>
+    <div class="grid g3 ins-grid">${cards.join('')}</div></section>`;
+}
+function qTeam(L, M, blank, add) { const t = blank(); L.forEach(r => add(t, r)); return M(t); }
 
 /* ============ RÉCORDS ============ */
 PAGES.records = R => {

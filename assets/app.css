@@ -98,6 +98,12 @@ table.t th button{border:none;background:none;color:inherit;font:inherit;text-tr
 table.t th.sorted{color:var(--acc)}
 table.t tr.link{cursor:pointer}table.t tr.link:hover td{background:#1A1D25}
 table.t td.split,table.t th.split{background:#1B1F28}
+/* columnas desplegadas (rebotes, tiros metidos/intentados): el grupo entero queda marcado */
+table.t td.grp{background:rgba(245,165,36,.07)}
+table.t th.grp{background:#2B2310;color:var(--acc2)}
+table.t .g-first{border-left:2px solid var(--acc)}
+table.t .g-last{border-right:2px solid var(--acc)}
+table.t th.g-mid,table.t th.g-last{font-size:12px}
 .rxbtn{border:none;background:transparent;color:var(--lose);font:600 13px Barlow;cursor:pointer;padding:0 0 0 4px}
 .sticky1 th:first-child,.sticky1 td:first-child{position:sticky;left:0;background:var(--card);z-index:1}
 .sticky1 th:first-child{background:var(--card2);z-index:2}
@@ -176,3 +182,11 @@ body.basic .foot{padding:16px;font-size:12px}
 .tilt-on .ph::after{opacity:1}
 table.t tr.team td{background:var(--accbg2);border-bottom:2px solid var(--accline)}
 table.t td.strong{font-weight:700;color:var(--tx)}
+/* "Lo que dicen los números" (Quintetos) */
+.ins{display:flex;flex-direction:column;gap:10px;padding:22px}
+.ins-h{display:flex;align-items:center;gap:10px}.ins-i{font-size:22px;line-height:1}
+.ins-who{font-weight:700;font-size:17px;line-height:1.35}
+.ins-t{color:var(--tx2);font-size:15px;line-height:1.5}.ins-t b{color:var(--tx)}
+.ins-f{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:auto;padding-top:6px}
+.ins-c{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
+.ins-c.ok{color:#4ade80;border-color:rgba(74,222,128,.4)}.ins-c.mid{color:var(--acc);border-color:var(--accline)}.ins-c.low{color:var(--mut)}
