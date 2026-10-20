@@ -81,37 +81,77 @@ PAGES.graficas = () => {
 PAGES.quintetos = () => {
   const s = S.season;
   const L = S.M.lineups.filter(r => r.season === s);
-  const head = `<div class="pagehead"><div><h1>Quintetos</h1><div class="sub">Qué cinco funcionan mejor juntos: minutos en pista, puntos a favor y en contra, y acierto en el tiro</div></div></div>`;
-  if (!L.length) return head + `<section class="sec"><div class="empty">No hay quintetos apuntados en la temporada ${esc(s)}. Se registran desde la 26/27 con la herramienta de apuntar partidos: en cuanto se envíe el primer partido aparecerán aquí.</div></section>`;
-  const by = {};
-  L.forEach(r => { const k = r.five.join('|'); const a = by[k] || (by[k] = { five: r.five, min: 0, pf: 0, pc: 0, t2m: 0, t2a: 0, t3m: 0, t3a: 0, tlm: 0, tla: 0 }); ['min', 'pf', 'pc', 't2m', 't2a', 't3m', 't3a', 'tlm', 'tla'].forEach(x => a[x] += r[x]); });
-  const inc = ui('q.inc', []), mm = ui('q.min', 0), so = ui('q.sort', 'min');
+  const head = `<div class="pagehead"><div><h1>Quintetos</h1><div class="sub">Qué jugadores funcionan mejor juntos: en quintetos, tríos y parejas. Todo por 36 minutos o en porcentaje, para que pesen igual los que juegan mucho y los que juegan poco</div></div></div>`;
+  if (!L.length) return head + `<section class="sec"><div class="empty">No hay quintetos apuntados en la temporada ${esc(s)}. Se registran desde la 26/27 con la herramienta de apuntar partidos: en cada cuarto se marcan los cinco en pista y cada cambio.</div></section>`;
+  const K = ui('q.k', 5), mm = ui('q.min', 0), view = ui('q.v', 'res'), inc = ui('q.inc', []);
+  const SUMS = ['min', 'pf', 'pc', 't2m', 't2a', 't3m', 't3a', 'tlm', 'tla'], PLAY = ['rebo', 'rebd', 'ast', 'stl', 'blk', 'tov'];
+  const blank = () => { const o = {}; SUMS.concat(PLAY).forEach(k => o[k] = 0); o.x = { min: 0, pf: 0, fgm: 0, fga: 0, fta: 0 }; return o; };
+  const add = (a, r) => { SUMS.forEach(k => a[k] += r[k]);
+    if (r.tov != null) { PLAY.forEach(k => a[k] += r[k] || 0); a.x.min += r.min; a.x.pf += r.pf; a.x.fgm += r.t2m + r.t3m; a.x.fga += r.t2a + r.t3a; a.x.fta += r.tla; } };
+  const combos = (arr, k) => k === arr.length ? [arr] : k === 1 ? arr.map(x => [x]) : arr.flatMap((x, i) => combos(arr.slice(i + 1), k - 1).map(c => [x].concat(c)));
+  const by = {}; L.forEach(r => combos(r.five, K).forEach(c => { const key = c.join('|'); const a = by[key] || (by[key] = Object.assign(blank(), { five: c })); add(a, r); }));
+  const team = blank(); L.forEach(r => add(team, r));
+  const M = a => { const fgm = a.t2m + a.t3m, fga = a.t2a + a.t3a, pts = 2 * a.t2m + 3 * a.t3m + a.tlm, x = a.x, has = x.min > 0;
+    const pos = has ? x.fga + 0.44 * x.fta + a.tov - a.rebo : 0, p36 = v => has && x.min ? v * 36 / x.min : null;
+    return { min: a.min, pm: a.pf - a.pc, net: a.min ? (a.pf - a.pc) * 36 / a.min : null, pf36: a.min ? a.pf * 36 / a.min : null, pc36: a.min ? a.pc * 36 / a.min : null,
+      ortg: pos > 0 ? x.pf / pos * 100 : null, fg: fga ? fgm / fga : null, efg: fga ? (fgm + 0.5 * a.t3m) / fga : null, ts: (fga + 0.44 * a.tla) ? pts / (2 * (fga + 0.44 * a.tla)) : null,
+      pace: p36(pos), astto: has && (a.ast || a.tov) ? a.ast / Math.max(1, a.tov) : null, ast0: has && !a.tov && a.ast ? a.ast : null, pasd: has && x.fgm ? Math.min(1, a.ast / x.fgm) : null,
+      ast36: p36(a.ast), tov36: p36(a.tov), orb36: p36(a.rebo), drb36: p36(a.rebd), stk36: p36(a.stl + a.blk), pts, has }; };
+  let rows = Object.values(by).filter(a => inc.every(p => a.five.includes(p)) && a.min >= mm).map(a => Object.assign(a, { m: M(a) }));
+  const T = M(team);
+  // columnas de cada vista: [clave, título, formato, mejor = 'alto'|'bajo', ayuda]
+  const f1 = v => isNum(v) ? nf(v, 1) : (v === Infinity ? '∞' : '—'), fs = v => sg(v), fp = v => pc0(v), f0 = v => isNum(v) ? nf(v, 0) : '—';
+  const VIEWS = {
+    res: [['net', '+/− /36', fs, 'alto', 'Diferencia de puntos si jugaran 36 minutos a ese ritmo'], ['pf36', 'PF /36', f1, 'alto', 'Puntos a favor por 36 minutos: su ataque'], ['pc36', 'PC /36', f1, 'bajo', 'Puntos en contra por 36 minutos: su defensa'], ['ortg', 'Pts /100 pos', f0, 'alto', 'Puntos por cada 100 posesiones propias: el ataque sin depender del ritmo'], ['pm', '+/−', fs, 'alto', 'Diferencia de puntos total']],
+    tiro: [['fg', 'TC%', fp, 'alto', 'Tiros de campo: de 2 y triples juntos'], ['efg', 'eFG%', fp, 'alto', 'Tiro de campo efectivo: el triple cuenta 1,5 veces'], ['ts', 'TS%', fp, 'alto', 'Tiro real: incluye también los tiros libres'], ['t2', 'Tiros de 2', null], ['t3', 'Triples', null], ['tl', 'T. libres', null]],
+    juego: [['astto', 'AST/PÉR', f1, 'alto', 'Asistencias por cada pérdida (sin pérdidas sale, por ejemplo, 3/0)'], ['pasd', '% asistidas', fp, 'alto', 'Canastas que vienen de asistencia'], ['ast36', 'AST /36', f1, 'alto'], ['tov36', 'PÉR /36', f1, 'bajo'], ['orb36', 'REB O /36', f1, 'alto'], ['drb36', 'REB D /36', f1, 'alto'], ['stk36', 'ROB+TAP /36', f1, 'alto', 'Robos más tapones'], ['pace', 'Ritmo', f1, 'alto', 'Posesiones propias por 36 minutos']]
+  };
+  const cols = VIEWS[view] || VIEWS.res;
+  let so = ui('q.sort', 'min'); if (so !== 'min' && !cols.some(c => c[0] === so && c[2])) so = 'min';
+  const better = so === 'min' ? 'alto' : cols.find(c => c[0] === so)[3];
+  const val = v => v === Infinity ? 1e9 : isNum(v) ? v : null;
+  const few = r => r.min < (K === 5 ? 5 : 10);
+  rows.sort((a, b) => { if (so !== 'min' && few(a) !== few(b)) return few(a) ? 1 : -1; const x = val(a.m[so]), y = val(b.m[so]); if (x == null && y == null) return b.min - a.min; if (x == null) return 1; if (y == null) return -1; return better === 'bajo' ? x - y : y - x; });
+  const NOUN = { 5: ['quinteto', 'Quintetos'], 3: ['trío', 'Tríos'], 2: ['pareja', 'Parejas'] }[K];
+  const tog = p => inc.includes(p) ? inc.filter(x => x !== p) : inc.concat(p);
   const players = uniq(L.flatMap(r => r.five)).sort();
-  let rows = Object.values(by).filter(a => inc.every(p => a.five.includes(p)) && a.min >= mm);
-  rows.forEach(a => { a.pm = a.pf - a.pc; a.net = a.min ? a.pm * 36 / a.min : 0; });
-  rows.sort((a, b) => b[so] - a[so]);
   const totMin = sum(L, r => r.min);
   const shot = (m, a) => `<div style="font-weight:600">${a ? pc0(m / a) : '—'}</div><div class="small mut">${m}/${a}</div>`;
-  const tog = p => inc.includes(p) ? inc.filter(x => x !== p) : inc.concat(p);
+  const cell = (r, c) => c[0] === 'astto' && r.m.ast0 ? r.m.ast0 + '/0' : c[0] === 't2' ? shot(r.t2m, r.t2a) : c[0] === 't3' ? shot(r.t3m, r.t3a) : c[0] === 'tl' ? shot(r.tlm, r.tla) : c[2](r.m[c[0]]);
+  const th = c => c[2] ? `<th class="${so === c[0] ? 'sorted' : ''}" title="${esc(c[4] || '')}"><button type="button" ${on('q.sort', c[0])}>${c[1]}${so === c[0] ? ' ▾' : ''}</button></th>` : `<th>${c[1]}</th>`;
+  const MINS = K === 5 ? [0, 5, 10, 20] : K === 3 ? [0, 10, 20, 40] : [0, 20, 40, 80];
+  const anyPlay = L.some(r => r.tov != null);
+  const table = rows.length ? `<div class="tw"><table class="t sticky1"><tr><th>${NOUN[1].slice(0, -1)}</th><th class="${so === 'min' ? 'sorted' : ''}"><button type="button" ${on('q.sort', 'min')}>Min${so === 'min' ? ' ▾' : ''}</button></th><th>Marcador</th>${cols.map(th).join('')}</tr>
+      <tr class="team"><td><div style="font-weight:700">Todo el equipo</div><div class="small mut">referencia para comparar</div></td><td>${nf(T.min)}</td><td>${team.pf}–${team.pc}</td>${cols.map(c => `<td>${cell(Object.assign({}, team, { m: T }), c)}</td>`).join('')}</tr>
+      ${rows.map(r => `<tr class="${few(r) ? 'dimrow' : ''}"><td style="white-space:normal;min-width:${K === 5 ? 260 : 170}px"><div style="font-weight:600">${r.five.map(p => plink(p)).join(K === 5 ? ' · ' : ' + ')}</div>${view === 'tiro' && r.m.pts ? `<div class="small mut">De 2 ${pc0(2 * r.t2m / r.m.pts)} · triples ${pc0(3 * r.t3m / r.m.pts)} · libres ${pc0(r.tlm / r.m.pts)}</div>` : ''}</td><td>${nf(r.min)}<div class="small mut">${pc0(r.min / totMin)}</div></td><td>${r.pf}–${r.pc}</td>${cols.map(c => `<td class="${c[0] === so && c[2] ? 'strong' : ''}">${cell(r, c)}</td>`).join('')}</tr>`).join('')}</table></div>`
+    : `<div class="empty">Ningún ${NOUN[0]} cumple estos filtros.</div>`;
   // con y sin cada jugador
   const onoff = players.map(p => { const onL = L.filter(r => r.five.includes(p)), off = L.filter(r => !r.five.includes(p));
     const m1 = sum(onL, r => r.min), m0 = sum(off, r => r.min); const n1 = m1 ? sum(onL, r => r.pf - r.pc) * 36 / m1 : null, n0 = m0 ? sum(off, r => r.pf - r.pc) * 36 / m0 : null;
     return { p, m1, m0, n1, n0, d: isNum(n1) && isNum(n0) ? n1 - n0 : null }; }).sort((a, b) => (b.d ?? -1e9) - (a.d ?? -1e9));
-  const pairs = {}; L.forEach(r => { for (let i = 0; i < 5; i++) for (let j = i + 1; j < 5; j++) { const k = r.five[i] + '|' + r.five[j]; const a = pairs[k] || (pairs[k] = { k, min: 0, pf: 0, pc: 0 }); a.min += r.min; a.pf += r.pf; a.pc += r.pc; } });
-  const pr = Object.values(pairs).sort((a, b) => b.min - a.min).slice(0, 10);
   return head + `<section class="sec stack" style="gap:16px">
-    <div class="chips"><span class="small mut" style="align-self:center">Quintetos que incluyan a</span>${players.map(p => `<button type="button" class="chip ${inc.includes(p) ? 'on' : ''}" ${on('q.inc', tog(p))}>${esc(p)}</button>`).join('')}</div>
-    <div class="row" style="gap:24px;flex-wrap:wrap"><div class="chips"><span class="small mut" style="align-self:center">Minutos juntos</span>${[0, 5, 10, 20].map(m => `<button type="button" class="chip ${mm === m ? 'on' : ''}" ${on('q.min', m)}>${m ? '≥ ' + m : 'Todos'}</button>`).join('')}</div>
-      <div class="chips"><span class="small mut" style="align-self:center">Ordenar por</span>${[['min', 'Minutos'], ['net', '+/− por 36'], ['pm', '+/−']].map(([k, l]) => `<button type="button" class="chip ${so === k ? 'on' : ''}" ${on('q.sort', k)}>${l}</button>`).join('')}</div></div>
-    ${rows.length ? `<div class="tw"><table class="t sticky1"><tr><th>Quinteto</th><th>Min</th><th>Marcador</th><th>+/−</th><th>Tiros de 2</th><th>Triples</th><th>T. libres</th><th>+/− por 36</th></tr>
-      ${rows.map(a => { const pts = 2 * a.t2m + 3 * a.t3m + a.tlm; return `<tr><td style="white-space:normal;min-width:260px"><div style="font-weight:600">${a.five.map(p => plink(p)).join(' · ')}</div>${pts ? `<div class="small mut">De 2 ${pc0(2 * a.t2m / pts)} · triples ${pc0(3 * a.t3m / pts)} · libres ${pc0(a.tlm / pts)}</div>` : ''}</td><td>${nf(a.min)}<div class="small mut">${pc0(a.min / totMin)}</div></td><td>${a.pf}–${a.pc}</td><td class="${a.pm > 0 ? 'best' : ''}">${sg(a.pm)}</td><td>${shot(a.t2m, a.t2a)}</td><td>${shot(a.t3m, a.t3a)}</td><td>${shot(a.tlm, a.tla)}</td><td style="font-weight:700" class="${a.net > 0 ? 'acc' : ''}">${sg(a.net)}</td></tr>`; }).join('')}</table></div>` : '<div class="empty">Ningún quinteto cumple el filtro.</div>'}
-    <div class="note">+/− por 36 min = diferencia de puntos si ese quinteto jugara 36 minutos a ese ritmo. Con pocos minutos es muy volátil: mira también la columna Min. Los tiros son los del equipo mientras ese quinteto está en pista (metidos/intentados).</div></section>
+    <div class="row" style="gap:24px;flex-wrap:wrap">
+      <div class="chips"><span class="small mut" style="align-self:center">Ver</span>${[[5, 'Quintetos'], [3, 'Tríos'], [2, 'Parejas']].map(([k, l]) => `<button type="button" class="chip ${K === k ? 'on' : ''}" ${on('q.k', k)}>${l}</button>`).join('')}</div>
+      <div class="chips"><span class="small mut" style="align-self:center">Stats</span>${[['res', 'Resumen'], ['tiro', 'Tiro'], ['juego', 'Juego']].map(([k, l]) => `<button type="button" class="chip ${view === k ? 'on' : ''}" ${on('q.v', k)}>${l}</button>`).join('')}</div>
+      <div class="chips"><span class="small mut" style="align-self:center">Minutos juntos</span>${MINS.map(m => `<button type="button" class="chip ${mm === m ? 'on' : ''}" ${on('q.min', m)}>${m ? '≥ ' + m : 'Todos'}</button>`).join('')}</div></div>
+    <div class="chips"><span class="small mut" style="align-self:center">Que incluyan a</span>${players.map(p => `<button type="button" class="chip ${inc.includes(p) ? 'on' : ''}" ${on('q.inc', tog(p))}>${esc(p)}</button>`).join('')}</div>
+    ${table}
+    <div class="note">Pulsa el título de una columna para ordenar (primero el mejor). Las filas con menos de ${K === 5 ? 5 : 10} minutos salen atenuadas y, al ordenar, van al final: con tan poco tiempo los números bailan mucho.
+      ${view === 'res' ? ' Pts /100 pos: posesiones = tiros de campo + 0,44 × tiros libres + pérdidas − rebotes ofensivos.' : ''}${view === 'tiro' ? ' Los tiros son los del equipo mientras esos jugadores están juntos en pista (metidos/intentados).' : ''}${view === 'juego' ? ' Asistencias, pérdidas, rebotes, robos y tapones del equipo mientras están juntos en pista.' : ''}
+      ${!anyPlay && view !== 'tiro' ? ' Asistencias, pérdidas y rebotes por quinteto se guardan a partir de los partidos apuntados con la versión nueva de la herramienta.' : ''}</div></section>
   <section class="sec grid g2" style="gap:24px">
     <div class="card stack"><h3>Con y sin cada jugador</h3><div class="note">+/− por 36 min del equipo con él en pista y en el banquillo</div>
       <div style="overflow-x:auto"><table class="t"><tr><th>Jugador</th><th>Min</th><th>En pista</th><th>Fuera</th><th>Diferencia</th></tr>${onoff.map(o => `<tr><td>${plink(o.p)}</td><td>${nf(o.m1)}</td><td>${sg(o.n1)}</td><td style="${o.m0 < 60 ? 'opacity:.5' : ''}">${sg(o.n0)}</td><td class="${o.d > 0 ? 'best' : ''}">${sg(o.d)}</td></tr>`).join('')}</table>
-      <div class="note">"Fuera" con menos de 60 minutos no es fiable: sale atenuado.</div></div>
-    <div class="card stack"><h3>Parejas</h3><div class="note">Las 10 parejas con más minutos juntas</div>
-      <table class="t"><tr><th>Pareja</th><th>Min</th><th>Marcador</th><th>/36</th></tr>${pr.map(a => `<tr><td>${a.k.split('|').map(p => plink(p)).join(' + ')}</td><td>${nf(a.min)}</td><td>${a.pf}–${a.pc}</td><td class="${a.pf > a.pc ? 'best' : ''}">${sg((a.pf - a.pc) * 36 / a.min)}</td></tr>`).join('')}</table></div></section>`;
+      <div class="note">"Fuera" con menos de 60 minutos no es fiable: sale atenuado.</div></div></div>
+    <div class="card stack"><h3>Cómo leer cada número</h3>
+      <div class="stack small" style="gap:8px;color:var(--tx2)">
+        <div><b>+/− /36</b>: cuánto ganaría (o perdería) ese grupo en 36 minutos a ese ritmo. Es el número que mejor resume si funcionan juntos.</div>
+        <div><b>PF /36 y PC /36</b>: lo mismo separado en ataque y defensa.</div>
+        <div><b>Pts /100 pos</b>: puntos por cada 100 ataques. No depende de si se juega rápido o lento.</div>
+        <div><b>eFG%</b>: acierto en el tiro dando al triple el valor extra que tiene. <b>TS%</b> añade los tiros libres.</div>
+        <div><b>AST/PÉR</b>: cuánto mueven el balón frente a cuánto lo pierden. <b>% asistidas</b>: canastas que vienen de un pase.</div>
+        <div><b>Ritmo</b>: cuántos ataques propios hacen en 36 minutos.</div>
+      </div></div></section>`;
 };
 
 /* ============ RÉCORDS ============ */

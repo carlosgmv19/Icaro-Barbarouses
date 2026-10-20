@@ -174,3 +174,5 @@ body.basic .foot{padding:16px;font-size:12px}
 .tilt-on .ph img.foto{transition:none}
 .ph::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(245,165,36,.20),transparent 55%)}
 .tilt-on .ph::after{opacity:1}
+table.t tr.team td{background:var(--accbg2);border-bottom:2px solid var(--accline)}
+table.t td.strong{font-weight:700;color:var(--tx)}

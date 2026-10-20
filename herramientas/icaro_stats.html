@@ -794,7 +794,8 @@ function qaApply(q,p,f,t,play){
   s[f]=(s[f]||0)+1;if(ATT_OF[f])s[ATT_OF[f]]++;
   if(f==='fls'){const n=QUARTERS.reduce((a,x)=>a+(state.stats[p]?.[x]?.fls||0),0);if(n>=5)setTimeout(()=>showToast('🟥 '+p+': 5 faltas, eliminado'),900);else if(n===4)setTimeout(()=>showToast('⚠ '+p+' lleva 4 faltas'),900)}
   shotDelta(q,snap);
-  const a={id:state.aseq=(state.aseq||0)+1,t:t!=null?t:null,q,p,f};state.acts.push(a);
+  const lst=state.courtPlayers[q].size===5?liveStint(q):null;
+  const a={id:state.aseq=(state.aseq||0)+1,t:t!=null?t:null,q,p,f,sid:lst?lst.id:null};state.acts.push(a);
   if(PTS_OF[f])addPoints(q,'plus',PTS_OF[f],Object.assign({by:p,f},t!=null?{t}:{}));
   updateScore();touch();qaPaint(q);renderALog(q);renderQStats(q);
   showToast('✓ '+QA_LBL[f]+' · '+p);
@@ -1084,7 +1085,10 @@ function buildPayload(){
     const any=(s.min||0)>0||['fg2a','fg3a','fta','rebd','rebo','ast','stl','blk','tov','fls','plus','minus'].some(k=>s[k]>0);if(!any)return;
     box.push({Temporada:state.temporada,PartidoID:state.partidoId,Jugador:p,Cuarto:qi+1,MIN:s.min||0,PTS:c.pts,FGM:c.fgm,FGA:c.fga,'3PM':s.fg3m,'3PA':s.fg3a,FTM:s.ftm,FTA:s.fta,
       REBO:s.rebo,REBD:s.rebd,AST:s.ast,STL:s.stl,BLK:s.blk,TOV:s.tov,FAL:s.fls||0,'+':s.plus,'-':s.minus})}));
-  const quintetos=state.stints.filter(stUsed).map((s,i)=>{const r={Temporada:state.temporada,PartidoID:state.partidoId,Cuarto:QUARTERS.indexOf(s.q)+1,Tramo:i+1,MIN:s.min||0,PF:s.pf,PC:s.pc,T2M:s.fg2m||0,T2A:s.fg2a||0,T3M:s.fg3m||0,T3A:s.fg3a||0,TLM:s.ftm||0,TLA:s.fta||0};
+  const actSid=a=>{if(a.t==null)return a.sid!=null?a.sid:null;let id=null;state.stints.filter(x=>x.q===a.q&&x.vt!=null).sort((x,y)=>x.vt-y.vt).forEach(x=>{if(x.vt<=a.t+0.01)id=x.id});return id};
+  const PLAY={rebo:'REBO',rebd:'REBD',ast:'AST',stl:'STL',blk:'BLK',tov:'TOV'};const play={};
+  (state.acts||[]).forEach(a=>{const k=PLAY[a.f];if(!k)return;const id=actSid(a);if(id==null)return;(play[id]=play[id]||{REBO:0,REBD:0,AST:0,STL:0,BLK:0,TOV:0})[k]++});
+  const quintetos=state.stints.filter(stUsed).map((s,i)=>{const r={Temporada:state.temporada,PartidoID:state.partidoId,Cuarto:QUARTERS.indexOf(s.q)+1,Tramo:i+1,MIN:s.min||0,PF:s.pf,PC:s.pc,T2M:s.fg2m||0,T2A:s.fg2a||0,T3M:s.fg3m||0,T3A:s.fg3a||0,TLM:s.ftm||0,TLA:s.fta||0};Object.assign(r,play[s.id]||{REBO:0,REBD:0,AST:0,STL:0,BLK:0,TOV:0});
     s.players.forEach((p,k)=>r['J'+(k+1)]=p);return r});
   const partido={Rival:state.rival,Fecha:state.date,Estado:'Jugado',Fase:state.partidoId.includes('-PO')?'Playoffs':undefined};
   let pf=0,pc=0;QUARTERS.forEach((q,qi)=>{const a=teamPts(q),b=state.opp[q]||0;const k=q==='q5'?'PR':'Q'+(qi+1);if(q!=='q5'||state.ot||a||b){partido[k+'F']=a;partido[k+'C']=b}pf+=a;pc+=b});
@@ -1343,6 +1347,7 @@ function fxApply(){if(!fx||!fx.S||fx.sel.length!==5)return;const{q,T,S,Tn}=fx;co
     was.filter(p=>!now.includes(p)).forEach(p=>{const s=initStat(p,q);s[f]=Math.max(0,s[f]-e.p)});
     now.filter(p=>!was.includes(p)).forEach(p=>{initStat(p,q)[f]+=e.p});e.players=now;
     if(!near&&inS(e.t)&&e.sid===S.id){if(e.k==='h'){S.pf=Math.max(0,S.pf-e.p);N.pf+=e.p}else{S.pc=Math.max(0,S.pc-e.p);N.pc+=e.p}e.sid=N.id}});
+  if(!near)(state.acts||[]).forEach(a=>{if(a.q===q&&inS(a.t)&&(a.sid===S.id||a.sid==null))a.sid=N.id});
   // tiros del quinteto (solo el tramo que se parte)
   if(!near)(state.acts||[]).forEach(a=>{if(a.q!==q||!inS(a.t)||!SHOT.includes(a.f))return;const ks=ATT_OF[a.f]?[a.f,ATT_OF[a.f]]:[a.f];
     ks.forEach(k=>{if(S[k]>0)S[k]--;N[k]=(N[k]||0)+1})});

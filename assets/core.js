@@ -120,7 +120,8 @@ function setData(d) {
   }).filter(l => l.g && (l.MIN || l.PTS || l.FGA || l.REB));
   M.linesByGame = {}; M.lines.forEach(l => (M.linesByGame[l.gid] = M.linesByGame[l.gid] || []).push(l));
   M.lineups = (d.Quintetos || []).map(r => ({ gid: r.PartidoID, season: String(r.Temporada), q: num(r.Cuarto), five: [r.J1, r.J2, r.J3, r.J4, r.J5].filter(Boolean).sort(),
-    min: num(r.MIN) || 0, pf: num(r.PF) || 0, pc: num(r.PC) || 0, t2m: num(r.T2M) || 0, t2a: num(r.T2A) || 0, t3m: num(r.T3M) || 0, t3a: num(r.T3A) || 0, tlm: num(r.TLM) || 0, tla: num(r.TLA) || 0 }))
+    min: num(r.MIN) || 0, pf: num(r.PF) || 0, pc: num(r.PC) || 0, t2m: num(r.T2M) || 0, t2a: num(r.T2A) || 0, t3m: num(r.T3M) || 0, t3a: num(r.T3A) || 0, tlm: num(r.TLM) || 0, tla: num(r.TLA) || 0,
+    rebo: num(r.REBO), rebd: num(r.REBD), ast: num(r.AST), stl: num(r.STL), blk: num(r.BLK), tov: num(r.TOV) }))
     .filter(r => r.five.length === 5 && r.min > 0);
   M.conv = (d.Convocatoria || []).map(r => ({ season: String(r.Temporada), gid: r.PartidoID, p: r.Jugador, estado: num(r.Estado) == null ? null : Math.min(3, num(r.Estado)), com: r.Comentario || '', t: r.Actualizado || '' }));
   M.media = (d.Media || []).map(r => ({ season: String(r.Temporada || ''), gid: r.PartidoID || '', p: r.Jugador || '', tipo: String(r.Tipo || '').toLowerCase(), url: r.URL || '', desc: r['Descripción'] || '', dest: yes(r.Destacado) })).filter(m => m.url);
