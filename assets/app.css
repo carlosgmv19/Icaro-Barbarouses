@@ -167,3 +167,10 @@ body.basic .foot{padding:16px;font-size:12px}
 .card table.t{white-space:normal}.card{min-width:0}
 @media (max-width:760px){.seasel select{padding:7px 24px 7px 10px;font-size:13px}.mode button{padding:6px 9px}.hdr-r{gap:6px}}
 @media (max-width:1480px) and (min-width:761px){.logo-tx{display:none}.nav a{padding:10px 9px}}
+/* efecto 3D de las fotos (assets/tilt.js) */
+.tilt{transition:transform .55s cubic-bezier(.2,.8,.2,1),box-shadow .3s;transform-style:preserve-3d;will-change:transform}
+.tilt.tilt-on{transition:box-shadow .3s;box-shadow:0 24px 60px rgba(0,0,0,.55);position:relative;z-index:2}
+.ph img.foto{transition:transform .55s cubic-bezier(.2,.8,.2,1)}
+.tilt-on .ph img.foto{transition:none}
+.ph::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .35s;background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(245,165,36,.20),transparent 55%)}
+.tilt-on .ph::after{opacity:1}
