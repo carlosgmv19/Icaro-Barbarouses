@@ -191,7 +191,8 @@ function rolesSeason(season) {
   if (roleCache[season]) return roleCache[season];
   const sp = seasonPlayers(season, 'Liga');
   const js = Object.keys(sp).map(p => ({ nombre: p, posiciones: (S.M.players[p] || {}).pos || [], pj: sp[p].gp, tot: Object.assign({}, sp[p].tot) }));
-  return (roleCache[season] = window.Roles ? Roles.calcular(js, { minPJ: MINPJ }) : {});
+  // temporada actual: quien ya ha jugado tiene su rol de esta temporada desde el primer partido (no el del año pasado)
+  return (roleCache[season] = window.Roles ? Roles.calcular(js, { minPJ: season === S.M.actual ? 1 : MINPJ }) : {});
 }
 function roleOf(p) {
   const pl = S.M.players[p];
