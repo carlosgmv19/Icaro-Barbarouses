@@ -377,6 +377,7 @@ document.body.appendChild(d)})})();
     <label>TM (s)<input id="vTMLen" type="number" min="10" max="180" step="5" onchange="vCfg()"></label>
     <label>min/cuarto<input id="vQLen" type="number" min="1" max="20" step="1" onchange="vCfg()"></label>
     <label>prórroga<input id="vPrLen" type="number" min="1" max="10" step="1" onchange="vCfg()"></label>
+    <label title="Minutos finales del 4º y de la prórroga en los que el reloj se para en cada parada. Ese tramo cuenta exactamente esos minutos, dure lo que dure en el vídeo: no hace falta parar el reloj a mano. 0 = desactivado">reloj parado al final (min)<input id="vStopMin" type="number" min="0" max="5" step="1" onchange="vCfg()"></label>
   </div>
   <div class="v-ctl" style="padding-top:0">
     <button onclick="vSkip(-10)" title="Atrás 10 s">« 10 s</button><button onclick="vSkip(-5)" title="Atrás 5 s">« 5 s</button>
@@ -394,8 +395,9 @@ document.body.appendChild(d)})})();
   <div class="v-exp">
     <button onclick="vExportAss()">⬇ Descargar marcador (.ass)</button>
     <button onclick="vTabSend()" style="border-color:var(--green);color:var(--green)" title="Descarga el marcador y prepara el comando de marcador + jugadas, sin enviar nada al Sheet">🎬 Preparar marcador + jugadas (sin enviar)</button>
-    <button onclick="vCopyCmd()" title="Saca las jugadas con su marcador y después crea el vídeo entero con marcador. Se pega tal cual en la terminal">📋 Copiar comando (jugadas + marcador)</button>
+    <button onclick="vBatAll()" title="Descarga el marcador y un .bat que saca las jugadas y después crea el vídeo entero con marcador. Doble clic en el .bat, o pega en la terminal la línea que queda copiada">⬇ Todo en un .bat (jugadas + marcador)</button>
     <button onclick="vAssBat()" title="Archivo para hacer doble clic: incrusta el marcador sin abrir la terminal">⬇ Incrustar marcador (.bat)</button>
+    <button onclick="vLightBat()" title="Si el vídeo va a tirones: crea una copia ligera (720p) para apuntar sobre ella. Los clips y el marcador se siguen sacando del original">🪶 Vídeo ligero para apuntar (.bat)</button>
     <button onclick="vClipScript('bat')" title="Un clip por cada jugada guardada con ⭐ Jugada" style="border-color:var(--accent);color:var(--accent)">✂ Recortar jugadas (.bat) <span id="vClipN2"></span></button>
     <button onclick="vClose()">✕ Cerrar vídeo</button>
   </div>
@@ -767,26 +769,29 @@ const QA_ACTS=[['fg2m','2 ✓','made'],['fg3m','3 ✓','made'],['ftm','TL ✓','
 const QA_LBL=Object.fromEntries(QA_ACTS.map(x=>[x[0],x[1]]));
 const MISS_OF={fg2a:'fg2m',fg3a:'fg3m',fta:'ftm'};
 let qaPend=null; // {q,f,p,play,t}
+function qaAuto(){return cfg().autoPause!==false}
+function qaSetAuto(v){const c=cfg();c.autoPause=!!v;try{localStorage.setItem(CFG_KEY,JSON.stringify(c))}catch(e){}QUARTERS.forEach(q=>qaPaint(q))}
+function qaResume(){setTimeout(()=>{if(!state.chg&&vid.paused&&vid.getAttribute('src'))vid.play().catch(()=>{})},80)}
 function qaCourt(q){const cp=state.courtPlayers[q];return activePlayers().filter(p=>cp.has(p))}
 function qaHTML(q){const pd=qaPend&&qaPend.q===q?qaPend:null;const on=qaCourt(q);
   const acts=QA_ACTS.map(([f,l,c])=>`<button class="qa-b ${c} ${pd&&pd.f===f?'sel':''}" onclick="qaAct('${q}','${f}')">${l}</button>`).join('');
   const ps=[0,1,2,3,4].map(i=>on[i]!=null?`<button class="qa-p ${pd&&pd.p===on[i]?'sel':''}" onclick="qaPly('${q}',${i})" title="Tecla ${i+1}"><small>${i+1}</small>${on[i]}${qaFl(on[i])}</button>`:`<button class="qa-p empty" disabled>—</button>`).join('');
   const hint=pd&&pd.f?`<b>${QA_LBL[pd.f]}</b> · ¿de quién? (o tecla 1–5 · Esc cancela)`:pd&&pd.p?`<b>${pd.p}</b> · ¿qué ha hecho?`:
     on.length?'Pulsa la acción y después el jugador':'⚠ Marca arriba quién está en pista';
-  return `<div class="qa-acts">${acts}</div><div class="qa-ply">${ps}</div><div class="qa-hint">${hint}</div>`}
+  return `<div class="qa-acts">${acts}</div><div class="qa-ply">${ps}</div><div class="qa-hint" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>${hint}</span><label style="display:flex;gap:6px;align-items:center;cursor:pointer" title="Si el vídeo va a tirones al pararlo y arrancarlo, desactívalo: el momento se guarda igual al pulsar la acción"><input type="checkbox" ${qaAuto()?'checked':''} onchange="qaSetAuto(this.checked)"> Parar el vídeo al apuntar</label></div>`}
 function qaFl(p){const n=QUARTERS.reduce((a,x)=>a+(state.stats[p]?.[x]?.fls||0),0);return n?`<span class="fl ${n>=5?'f5':n===4?'f4':''}" title="Faltas en el partido">${n}F</span>`:''}
 function qaPaint(q){const el=document.getElementById('qa-'+q);if(!el)return;el.innerHTML=qaHTML(q);el.classList.toggle('wait',!!(qaPend&&qaPend.q===q&&qaPend.f))}
 function qaAct(q,f){
   if(qaPend&&qaPend.q===q&&qaPend.p&&!qaPend.f){const p=qaPend.p,play=qaPend.play;qaPend=null;qaApply(q,p,f,vNow(),play);return}
   if(qaPend&&qaPend.q===q&&qaPend.f===f){qaCancel();return}
-  const play=qaPend?qaPend.play:(vid&&vid.getAttribute('src')&&!vid.paused);
+  const play=qaPend?qaPend.play:(qaAuto()&&vid&&vid.getAttribute('src')&&!vid.paused);
   if(play)vid.pause();
   qaPend={q,f,play,t:vNow()};qaPaint(q)}
 function qaPly(q,i){const p=qaCourt(q)[i];if(!p)return;
   if(qaPend&&qaPend.q===q&&qaPend.f){const{f,play,t}=qaPend;qaPend=null;qaApply(q,p,f,t,play);return}
-  const play=qaPend?qaPend.play:(vid&&vid.getAttribute('src')&&!vid.paused);if(play)vid.pause();
+  const play=qaPend?qaPend.play:(qaAuto()&&vid&&vid.getAttribute('src')&&!vid.paused);if(play)vid.pause();
   qaPend={q,p,play,t:vNow()};qaPaint(q)}
-function qaCancel(){if(!qaPend)return;const{q,play}=qaPend;qaPend=null;qaPaint(q);if(play&&!state.chg)vid.play()}
+function qaCancel(){if(!qaPend)return;const{q,play}=qaPend;qaPend=null;qaPaint(q);if(play)qaResume()}
 function qaApply(q,p,f,t,play){
   if(!isOnCourt(p,q)){showToast('⚠ '+p+' no está en pista');qaPaint(q);return}
   const s=initStat(p,q);const snap=shotSnap(q);
@@ -798,7 +803,7 @@ function qaApply(q,p,f,t,play){
   if(PTS_OF[f])addPoints(q,'plus',PTS_OF[f],Object.assign({by:p,f},t!=null?{t}:{}));
   updateScore();touch();qaPaint(q);renderALog(q);renderQStats(q);
   showToast('✓ '+QA_LBL[f]+' · '+p);
-  if(play&&!state.chg)vid.play()}
+  if(play)qaResume()}
 // quitar una acción: deshace la estadística y, si era canasta, sus puntos y el +/−
 function delAct(id){const i=state.acts.findIndex(a=>a.id===id);if(i<0)return;const a=state.acts[i];const{q,p,f}=a;
   if(PTS_OF[f]){const k=(state.vev||[]).findIndex(e=>e.q===q&&e.by===p&&e.f===f&&a.t!=null&&Math.abs(e.t-a.t)<0.05);
@@ -1121,14 +1126,13 @@ function videoOnly(){const log=document.getElementById('sendLog');
 function afterSend(log){
   if(!vid.getAttribute('src'))return;const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;const nC=(state.clips||[]).length;
   if(!hasBoard&&!nC)return;
-  if(hasBoard)vExportAss();
-  const cmd=allCmd();const q=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const r=matchBat();if(!r)return;const q=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   log.innerHTML+=`<div style="margin-top:12px;padding:12px;border:1px solid var(--accent);border-radius:8px;background:rgba(249,115,22,.06)">
     <div style="font-weight:700;margin-bottom:6px">Vídeo con marcador${nC?' y '+nC+' jugadas':''}</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">${hasBoard?'Ya se ha descargado <b>'+assName()+'</b> en Descargas. ':''}Copia el comando, pégalo en la terminal (cmd o PowerShell) y pulsa Enter.${nC?' Primero saca las jugadas (cada una con su marcador, en minutos) y'+(hasBoard?' después':'')+'':''}${hasBoard?' crea el vídeo entero con marcador (tarda bastante)':''}. Los clips quedan en la carpeta <b>jugadas</b> junto al vídeo.</div>
-    <button class="btn-sec" style="margin:0 0 8px" onclick="copyAll()">📋 Copiar comando</button>
-    <pre style="margin:0;white-space:pre-wrap;word-break:break-all;font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--muted);max-height:160px;overflow:auto">${q(cmd)}</pre></div>`;
-  (navigator.clipboard?navigator.clipboard.writeText(cmd):Promise.reject()).then(()=>showToast('✓ Enviado. Comando copiado: pégalo en la terminal'),()=>{})}
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Se han descargado en Descargas ${hasBoard?'<b>'+assName()+'</b> y ':''}<b>${batName()}</b>. Para lanzarlo, <b>haz doble clic en el .bat</b> o pega esta línea en la terminal (ya está copiada) y pulsa Enter.${nC?' Primero saca las jugadas y'+(hasBoard?' después':''):''}${hasBoard?' crea el vídeo entero con marcador (tarda bastante)':''}. Los clips quedan en la carpeta <b>jugadas</b> junto al vídeo.</div>
+    <button class="btn-sec" style="margin:0 0 8px" onclick="copyLine()">📋 Copiar la línea</button>
+    <pre style="margin:0;white-space:pre-wrap;word-break:break-all;font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--muted)">${q(r.line)}</pre></div>`;
+  showToast('✓ .bat descargado y línea copiada: doble clic en el .bat o pégala en la terminal')}
 function buildSheetData(){
   const players=activePlayers();
   const hdr=['nombre','MIN','PTS','REBD','REBO','AST','STL','BLK','TOV','+','-','+/-','FGM','FGA','%FG','3PM','3PA','%3P','FTM','FTA','%FT','EFF','VAL','IMPFIN','EFF_norm','VAL_norm','','S','TM','TM','F'];
@@ -1194,7 +1198,16 @@ function realEl(p,t){const m=vMark(p);if(m.s==null||t<=m.s)return 0;const end=m.
   let paused=0,cs=null,ce=null;iv.forEach(([a,b])=>{if(ce==null||a>ce){if(ce!=null)paused+=ce-cs;cs=a;ce=b}else ce=Math.max(ce,b)});if(ce!=null)paused+=ce-cs;
   return Math.max(0,end-m.s-paused)}
 function c0(p){const m=vMark(p);return m.c0!=null?m.c0:pLen(p)}
-function gameEl(p,t){const m=vMark(p);if(m.s==null)return 0;return Math.min(c0(p),realEl(p,t))}
+/* Últimos minutos del 4º y de la prórroga: el reloj se para en cada parada y no da tiempo a pararlo a mano.
+   Ese tramo final dura en el vídeo lo que dure, pero cuenta como exactamente esos minutos de juego:
+   desde que el reloj llega a 2:00 hasta "Fin de cuarto", el tiempo real se reparte en 2 minutos.
+   Mientras no se marque el fin, el reloj baja normal y se queda en 0:01 (nunca llega a 0 antes de tiempo). */
+function stopLen(p){if(p!=='q4'&&p!=='q5')return 0;const c=state.vcfg||{};const v=c.stopMin==null?2:+c.stopMin;return Math.max(0,isNaN(v)?2:v)*60}
+function gameRaw(p,t){const m=vMark(p);if(m.s==null)return 0;const r=realEl(p,t);const C=c0(p);const T2=Math.max(0,C-stopLen(p)),F=C-T2;
+  if(F<=0||r<=T2)return r;
+  if(m.e!=null){const R=realEl(p,m.e);return R>T2?T2+F*(r-T2)/(R-T2):r}
+  return T2+Math.min(r-T2,Math.max(0,F-1))}
+function gameEl(p,t){const m=vMark(p);if(m.s==null)return 0;return Math.min(c0(p),gameRaw(p,t))}
 function tmAt(t){const p=periodAt(t);const x=(vMark(p).pauses||[]).find(x=>x[2]&&x[2].tm&&t>=x[0]&&t<x[1]);return x?{k:x[2].tm,rem:x[1]-t,i:vMark(p).pauses.indexOf(x),p}:null}
 function mmss(sec){const s=Math.max(0,Math.ceil(sec-1e-6));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 // parcial: un equipo mete 5 seguidos; se borra al acabar el cuarto, tras 3 min de juego sin cambios o si la diferencia baja de 5
@@ -1228,8 +1241,8 @@ function paintBoard(){
   if(bar.textContent!==bt){bar.textContent=bt;bar.style.display=bt?'block':'none'}
   const pb=document.getElementById('vPauseBtn');const ps=vPaused(ck.p,t);
   if(pb.classList.contains('on')!==ps){pb.classList.toggle('on',ps);pb.textContent=ps?'▶ Reanudar reloj':'⏸ Parar reloj'}
-  let cur=-1;document.querySelectorAll('#vList .v-row').forEach((r,i)=>{if(+r.dataset.t<=t)cur=i});
-  document.querySelectorAll('#vList .v-row').forEach((r,i)=>r.classList.toggle('now',i===cur));
+  const rows=document.querySelectorAll('#vList .v-row');let cur=-1;rows.forEach((r,i)=>{if(+r.dataset.t<=t)cur=i});
+  if(cur!==paintBoard.cur||rows.length!==paintBoard.n){paintBoard.cur=cur;paintBoard.n=rows.length;rows.forEach((r,i)=>r.classList.toggle('now',i===cur))}
 }
 function renderVList(){
   const el=document.getElementById('vList');if(!el)return;const n=vNames();
@@ -1254,7 +1267,7 @@ function renderVList(){
   const w=document.getElementById('vWarn');const bad=(state.vev||[]).length&&(h!==us||a!==them);
   w.style.display=bad?'block':'none';if(bad)w.textContent=`⚠ El marcador del vídeo acaba ${h}–${a} y el del partido va ${us}–${them}. Revisa la lista: alguna canasta se apuntó sin el vídeo abierto o se corrigió a mano.`;
   const base=vName||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base;
-  vFillDirs();document.getElementById('vCmd').textContent=allCmd()||assCmd();
+  vFillDirs();document.getElementById('vCmd').textContent=state.xs?'Último .bat: '+batName()+'\nPara lanzarlo: doble clic en él, o pega en la terminal:\n'+runBatLine():'Pulsa "⬇ Todo en un .bat" para descargar el marcador y el .bat con las jugadas y el vídeo con marcador.';
   vSig='';paintBoard()
 }
 function vSeek(t){vid.currentTime=Math.max(0,t-3)}
@@ -1363,8 +1376,8 @@ vid.addEventListener('play',()=>{if(state.chg){vid.pause();showToast('⚠ Pulsa 
 /* minutos: tiempo real de cada tramo; al acabar el cuarto se escalan a 12 (prórroga: a sus minutos) */
 function recalcMinutes(q){const m=vMark(q);if(m.s==null)return false;const its=state.stints.filter(x=>x.q===q);
   if(!its.length||its.some(x=>x.vt==null))return false;const so=its.slice().sort((a,b)=>a.vt-b.vt);
-  const end=m.e!=null?m.e:Math.max(m.s,vNow()??m.s);const real=gameEl(q,end);const f=(m.e!=null&&real>0)?pLen(q)/real:1;
-  so.forEach((x,i)=>{const a=gameEl(q,Math.max(x.vt,m.s)),b=gameEl(q,i+1<so.length?Math.max(so[i+1].vt,m.s):end);x.min=Math.round(Math.max(0,b-a)/60*f*100)/100});
+  const end=m.e!=null?m.e:Math.max(m.s,vNow()??m.s);const real=gameRaw(q,end);const f=(m.e!=null&&real>0)?pLen(q)/real:1;
+  so.forEach((x,i)=>{const a=gameRaw(q,Math.max(x.vt,m.s)),b=gameRaw(q,i+1<so.length?Math.max(so[i+1].vt,m.s):end);x.min=Math.round(Math.max(0,b-a)/60*f*100)/100});
   activePlayers().forEach(p=>{initStat(p,q).min=Math.round(its.filter(x=>x.players.includes(p)).reduce((a,x)=>a+(x.min||0),0)*100)/100});return true}
 /* descanso / parón: avanza rápido; al volver el juego retrocede 10 s para marcar el momento exacto */
 let vBrkOn=null;
@@ -1425,14 +1438,15 @@ function vDelEv(i,quiet){const e=state.vev[i];if(!e)return;const f=e.k==='h'?'pl
   state.vev.splice(i,1);touch();updateScore();
   const act=document.querySelector('.tab.active')?.dataset.tab;if(QUARTERS.includes(act))renderQuarter(act);if(act==='quintetos')renderQuintetos();
   renderVList();if(!quiet)showToast(e.by?'↩ Canasta de '+e.by+' borrada (también de sus estadísticas y del +/−)':'↩ Anotación borrada (también del +/−)')}
-function vCfg(){state.vcfg={qLen:Math.max(1,+document.getElementById('vQLen').value||12),prLen:Math.max(1,+document.getElementById('vPrLen').value||3),tmLen:Math.max(10,+document.getElementById('vTMLen').value||90)};touch();vSyncC0();renderVList()}
-function vSyncCfg(){const c=state.vcfg||(state.vcfg={qLen:12,prLen:3,tmLen:90});document.getElementById('vQLen').value=c.qLen;document.getElementById('vPrLen').value=c.prLen;document.getElementById('vTMLen').value=c.tmLen||90;vSyncC0()}
+function vCfg(){const sm=document.getElementById('vStopMin').value;state.vcfg={qLen:Math.max(1,+document.getElementById('vQLen').value||12),prLen:Math.max(1,+document.getElementById('vPrLen').value||3),tmLen:Math.max(10,+document.getElementById('vTMLen').value||90),stopMin:sm===''?2:Math.max(0,Math.min(5,+sm||0))};
+  QUARTERS.forEach(q=>recalcMinutes(q));touch();vSyncC0();renderVList()}
+function vSyncCfg(){const c=state.vcfg||(state.vcfg={qLen:12,prLen:3,tmLen:90});document.getElementById('vQLen').value=c.qLen;document.getElementById('vPrLen').value=c.prLen;document.getElementById('vTMLen').value=c.tmLen||90;document.getElementById('vStopMin').value=c.stopMin==null?2:c.stopMin;vSyncC0()}
 function vOpen(f){if(!f)return;if(vid.getAttribute('src'))URL.revokeObjectURL(vid.src);vid.src=URL.createObjectURL(f);vName=f.name;
   document.body.classList.add('has-video');vSyncCfg();renderVList();renderClips();showToast('🎬 '+f.name)}
 function vClose(){if(vid.getAttribute('src')){vid.pause();URL.revokeObjectURL(vid.src);vid.removeAttribute('src');vid.load()}document.body.classList.remove('has-video')}
 document.getElementById('vFile').addEventListener('change',e=>{vOpen(e.target.files[0]);e.target.value=''});
 vid.addEventListener('timeupdate',paintBoard);vid.addEventListener('seeked',paintBoard);
-(function loop(){if(!vid.paused){paintBoard();if(vStopAt!=null&&vid.currentTime>=vStopAt){vid.pause();vStopAt=null}}requestAnimationFrame(loop)})();
+let lastPaint=0;(function loop(now){if(!vid.paused){if(!(now-lastPaint<100)){lastPaint=now;paintBoard()}if(vStopAt!=null&&vid.currentTime>=vStopAt){vid.pause();vStopAt=null}}requestAnimationFrame(loop)})(0);
 vid.addEventListener('error',()=>{if(vid.getAttribute('src'))showToast('❌ Este navegador no puede reproducir ese vídeo')});
 const V_RATES=[0.5,0.75,1,1.25,1.5,2,3];
 document.addEventListener('keydown',e=>{
@@ -1474,12 +1488,12 @@ function jgOpen(i){
   if(i==null){const t=vid.currentTime;jg={i:null,a:Math.max(0,t-c.pre),b:Math.min(dur,t+c.post),who:[],kw:[],desc:''}}
   else{const cl=state.clips[i];jg={i,a:cl.a,b:cl.b,who:(Array.isArray(cl.who)?cl.who:(cl.who?[cl.who]:[])).slice(),kw:(cl.kw||[]).slice(),desc:cl.desc||cl.note||''}}
   jg.w0=Math.max(0,jg.a-15);jg.w1=Math.min(dur,jg.b+15);
-  const v=jgV();if(v.src!==vid.src)v.src=vid.src;v.currentTime=jg.a;
+  const v=jgV();if(v.getAttribute('src')!==vid.src)v.src=vid.src;v.currentTime=jg.a;
   const mt=jgMatch();document.getElementById('vJgM').innerHTML=mt?mt.txt+(state.rival?' · vs '+state.rival:''):'<span style="color:var(--yellow)">⚠ Elige el partido en Setup para que el clip lleve la jornada</span>';
   document.getElementById('vJgT').textContent=i==null?'Nueva jugada':'Editar jugada';document.getElementById('vJgDel').style.display=i==null?'none':'';
   document.getElementById('vJgD').value=jg.desc;
   document.getElementById('vJg').classList.add('on');jgRender();setTimeout(()=>{v.play().catch(()=>{})},60)}
-function jgClose(){jgV().pause();document.getElementById('vJg').classList.remove('on');jg=null}
+function jgClose(){const v=jgV();v.pause();v.removeAttribute('src');v.load();document.getElementById('vJg').classList.remove('on');jg=null}
 function jgRender(){if(!jg)return;
   document.getElementById('vJgA').value=cFmt(jg.a);document.getElementById('vJgB').value=cFmt(jg.b);
   document.getElementById('vJgDur').textContent=String(Math.round((jg.b-jg.a)*10)/10).replace('.',',')+' s';
@@ -1561,10 +1575,33 @@ function buildAss(){
   for(let i=1;i<=ts.length;i++){const t=i<ts.length?ts[i]:end;const x=i<ts.length?txt(t):null;
     if(x!==cur){if(t-from>=0.01)out.push('Dialogue: 0,'+assTime(from)+','+assTime(t)+',Marcador,,0,0,0,,'+cur);from=t;cur=x}}
   return out.join('\n')+'\n'}
+function xStamp(){const d=new Date(),z=n=>String(n).padStart(2,'0');state.xs=z(d.getMonth()+1)+z(d.getDate())+'-'+z(d.getHours())+z(d.getMinutes())+z(d.getSeconds());touch()}
 function vExportAss(){if(!(state.vev||[]).length&&vMark('q1').s==null){showToast('⚠ Aún no hay nada marcado en el vídeo');return}
+  xStamp();
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([buildAss()],{type:'text/plain;charset=utf-8'}));a.download=assName();
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);showToast('✓ '+assName()+' descargado en Descargas')}
-function assName(){return 'marcador_'+((state.partidoId||'partido').replace(/[^A-Za-z0-9-]+/g,''))+'.ass'}
+function xId(){return (state.partidoId||'partido').replace(/[^A-Za-z0-9-]+/g,'')}
+function assName(){return 'marcador_'+xId()+(state.xs?'_'+state.xs:'')+'.ass'}
+function batName(){return 'icaro_'+xId()+(state.xs?'_'+state.xs:'')+'.bat'}
+/* Descarga el marcador (.ass) y un .bat con todo: las jugadas y después el vídeo entero con marcador.
+   Para lanzarlo vale doble clic en el .bat o pegar UNA línea en la terminal (cmd o PowerShell). */
+function runBatLine(){const d=dirs();return `cmd /c "${d.ass.replace(/\//g,'\\')}\\${batName()}"`}
+function matchBat(){const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;const nC=(state.clips||[]).length;
+  if(!hasBoard&&!nC){showToast('⚠ No hay marcador ni jugadas que preparar');return null}
+  if(nC&&!jgMatch()){showToast('⚠ Elige el partido en Setup: los clips llevan la jornada en el nombre');return null}
+  if(hasBoard)vExportAss();else xStamp();
+  const p=assParts();const pc=x=>x.replace(/%/g,'%%');const clips=clipCmds();const L=['@echo off','chcp 65001 >nul',
+    `if not exist "${pc(p.inp)}" (echo No encuentro el video: ${pc(p.inp)}& echo Revisa "Carpeta del video" en la herramienta.& pause & exit /b)`];
+  if(hasBoard)L.push(`if not exist "${pc(p.assWin)}" (echo No encuentro el marcador: ${pc(p.assWin)}& echo Revisa "Carpeta del .ass" en la herramienta.& pause & exit /b)`);
+  if(clips.length){L.push(`echo [1/${hasBoard?2:1}] Sacando ${nC} jugada${nC>1?'s':''}...`,`if not exist "${pc(p.dir)}\\jugadas" mkdir "${pc(p.dir)}\\jugadas"`);
+    clips.slice(1).forEach((c,i)=>L.push(`echo   jugada ${i+1} de ${nC}`,pc(c)));L.push(`echo Jugadas listas en ${pc(p.dir)}\\jugadas`)}
+  if(hasBoard)L.push(`echo [${clips.length?2:1}/${clips.length?2:1}] Creando el video entero con marcador. Un partido de una hora tarda un buen rato...`,pc(assCmd().replace('-nostdin -y','-nostdin -y -hide_banner -loglevel error -stats')),`echo Listo: ${pc(p.out)}`);
+  L.push('echo.','echo Terminado. Ya puedes cerrar esta ventana.','pause');
+  const txt=L.join('\r\n')+'\r\n';
+  setTimeout(()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download=batName();
+    document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)},350);
+  const line=runBatLine();(navigator.clipboard?navigator.clipboard.writeText(line):Promise.reject()).then(()=>{},()=>{});
+  return{line,hasBoard,nC}}
 /* rutas para el comando del marcador (se recuerdan en este navegador) */
 const DIR_DEF={vid:'C:\\Users\\carlo\\Desktop\\Basket_Icaro\\SEASON 26-27',ass:'C:\\Users\\carlo\\Downloads'};
 function dirs(){const c=cfg();return{vid:(c.dirVid||DIR_DEF.vid),ass:(c.dirAss||DIR_DEF.ass)}}
@@ -1572,7 +1609,19 @@ function vDirs(){const c=cfg();const clean=v=>v.trim().replace(/^"+|"+$/g,'').re
   c.dirVid=clean(document.getElementById('dirVid').value)||DIR_DEF.vid;c.dirAss=clean(document.getElementById('dirAss').value)||DIR_DEF.ass;
   try{localStorage.setItem(CFG_KEY,JSON.stringify(c))}catch(e){}renderVList()}
 function vFillDirs(){const d=dirs();const a=document.getElementById('dirVid'),b=document.getElementById('dirAss');if(a&&document.activeElement!==a)a.value=d.vid;if(b&&document.activeElement!==b)b.value=d.ass}
-function assParts(){const d=dirs();const base=vName||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base;
+function origName(n){if(!n)return n;const m=n.match(/^(.*)_ligero\.mp4$/i);if(!m)return n;let map={};try{map=JSON.parse(localStorage.getItem('icaro:ligero')||'{}')}catch(e){}return map[n]||(m[1]+'.mp4')}
+function vLightBat(){if(!vName){showToast('⚠ Abre primero el vídeo original');return}if(/_ligero\.mp4$/i.test(vName)){showToast('Este ya es el vídeo ligero');return}
+  const d=dirs();const win=v=>v.replace(/\//g,'\\');const dot=vName.lastIndexOf('.'),stem=dot>0?vName.slice(0,dot):vName;const light=stem+'_ligero.mp4';
+  let map={};try{map=JSON.parse(localStorage.getItem('icaro:ligero')||'{}')}catch(e){}map[light]=vName;try{localStorage.setItem('icaro:ligero',JSON.stringify(map))}catch(e){}
+  const inp=win(d.vid)+'\\'+vName,out=win(d.vid)+'\\'+light,pc=x=>x.replace(/%/g,'%%');
+  const txt=['@echo off','chcp 65001 >nul',`if not exist "${pc(inp)}" (echo No encuentro el video: ${pc(inp)}& echo Revisa "Carpeta del video" en la herramienta.& pause & exit /b)`,
+    'echo Creando el video ligero para apuntar (720p). Tarda unos minutos...',
+    pc(`ffmpeg -nostdin -y -hide_banner -loglevel error -stats -i "${inp}" -map 0:v:0 -map 0:a:0? -vf "scale=-2:'min(720,ih)'" -c:v libx264 -preset veryfast -crf 24 -g 25 -keyint_min 25 -pix_fmt yuv420p -fps_mode passthrough -c:a aac -b:a 128k -movflags +faststart "${out}"`),
+    `echo Listo: ${pc(out)}`,'echo Abre ese archivo en la herramienta para apuntar. Los clips y el marcador se seguiran sacando del original.','pause'].join('\r\n')+'\r\n';
+  const f='video_ligero_'+((state.partidoId||'partido').replace(/[^A-Za-z0-9-]+/g,''))+'.bat';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download=f;
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);showToast('✓ '+f+' descargado: haz doble clic en él')}
+function assParts(){const d=dirs();const base=origName(vName)||'partido.mp4',dot=base.lastIndexOf('.'),stem=dot>0?base.slice(0,dot):base;
   const win=v=>v.replace(/\//g,'\\');
   // dentro del filtro de ffmpeg: barras normales y los dos puntos de la unidad escapados (C\:/...)
   const assF=(d.ass.replace(/\\/g,'/')+'/'+assName()).replace(/^([A-Za-z]):/,'$1\\:').replace(/'/g,"\\'");
@@ -1594,16 +1643,18 @@ function clipCmds(){const cs=(state.clips||[]).slice().sort((x,y)=>x.a-y.a);cons
 /* Primero las jugadas (tardan poco) y después el vídeo entero con marcador para el grupo. */
 function allCmd(){const hasBoard=(state.vev||[]).length||vMark('q1').s!=null;
   return clipCmds().concat(hasBoard?[assCmd()]:[]).join('\n')}
+function copyLine(){const t=runBatLine();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast('✓ Línea copiada: pégala en la terminal'),()=>showToast('Selecciónala y cópiala a mano'))}
+function vBatAll(){const r=matchBat();if(r)showToast('✓ '+batName()+' descargado y línea copiada: doble clic en el .bat o pégala en la terminal')}
 function copyAll(){const t=allCmd();if(!t){showToast('⚠ No hay marcador ni jugadas que preparar');return}
   (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast('✓ Comando copiado: pégalo en la terminal'),()=>showToast('Selecciónalo y cópialo a mano'))}
-function vAssBat(){const p=assParts();const pc=x=>x.replace(/%/g,'%%');
+function vAssBat(){vExportAss();const p=assParts();const pc=x=>x.replace(/%/g,'%%');
   const txt=['@echo off','chcp 65001 >nul',
     `if not exist "${pc(p.inp)}" (echo No encuentro el video: ${pc(p.inp)}& pause & exit /b)`,
     `if not exist "${pc(p.assWin)}" (echo No encuentro el marcador: ${pc(p.assWin)}& echo Si el navegador lo guardo con otro nombre, por ejemplo marcador 1, borra los marcadores antiguos de Descargas y vuelve a descargarlo.& pause & exit /b)`,
     'echo Incrustando el marcador. Un partido de una hora puede tardar un buen rato...',
     pc(assCmd()),
     `echo Listo: ${pc(p.out)}`,'pause'].join('\r\n')+'\r\n';
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download='incrustar_marcador.bat';
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));a.download='incrustar_marcador_'+xId()+'_'+state.xs+'.bat';
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);showToast('✓ incrustar_marcador.bat descargado: haz doble clic en él')}
 function vCopyCmd(){const t=allCmd()||assCmd();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast('✓ Comando copiado'),()=>showToast('Selecciónalo y cópialo a mano'))}
 
@@ -1613,10 +1664,9 @@ function minsFromVideo(){
   QUARTERS.forEach(q=>{const m=vMark(q);const items=state.stints.filter(s=>s.q===q);if(!items.length)return;
     if(m.s==null||m.e==null){skip.push(Q_LABELS[q]+' (falta marcar inicio o fin)');return}
     if(items.some(s=>s.vt==null)){skip.push(Q_LABELS[q]+' (hay cambios hechos sin el vídeo abierto)');return}
-    const pr=q==='q4'?vMark('pr'):null;const hasPr=pr&&pr.s!=null&&pr.e!=null;
-    const gm=t=>(gameEl(q,t)+(hasPr?gameEl('pr',t):0))/60;const total=gm(hasPr?pr.e:m.e);
-    items.forEach((s,i)=>{const a=i===0?0:gm(Math.max(s.vt,m.s));const b=i+1<items.length?gm(Math.max(items[i+1].vt,m.s)):total;
-      plan.push([s,Math.max(0,Math.round((b-a)*100)/100)])});done.push(q)});
+    const raw=t=>gameRaw(q,t)/60;const total=raw(m.e);const sc=total>0?(pLen(q)/60)/total:1;
+    items.forEach((s,i)=>{const a=i===0?0:raw(Math.max(s.vt,m.s));const b=i+1<items.length?raw(Math.max(items[i+1].vt,m.s)):total;
+      plan.push([s,Math.max(0,Math.round((b-a)*sc*100)/100)])});done.push(q)});
   if(!done.length){showToast('⚠ '+(skip.length?'No se puede: '+skip.join('; '):'No hay quintetos todavía'));return}
   if(!confirm('Se van a sustituir los minutos de quintetos y jugadores de '+done.map(q=>Q_LABELS[q]).join(', ')+' por los calculados desde el vídeo.'+(skip.length?'\n\nSe quedan como están: '+skip.join('; ')+'.':'')+'\n\n¿Continuar?'))return;
   plan.forEach(([s,v])=>{s.min=v});
