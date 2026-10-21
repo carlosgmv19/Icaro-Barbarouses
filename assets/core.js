@@ -69,7 +69,7 @@ async function boot() {
 async function reload() { try { const d = await fetchData(); ls.set('icaros:datos', { src: dataUrl(), t: Date.now(), data: d }); setData(d); render(); } catch (e) { console.error(e); } }
 
 /* ---------------- modelo ---------------- */
-const K = ['MIN', 'PTS', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'REBO', 'REBD', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'PLUS', 'MINUS'];
+const K = ['MIN', 'PTS', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'REBO', 'REBD', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'FAL', 'PLUS', 'MINUS'];
 const num = v => { if (v === '' || v == null) return null; const x = typeof v === 'number' ? v : Number(String(v).replace(',', '.')); return isFinite(x) ? x : null; };
 const yes = v => /^s[ií]$/i.test(String(v || '').trim());
 
@@ -144,7 +144,7 @@ function finishLine(o) {
 }
 
 /* ---------------- cálculos ---------------- */
-const SK = ['MIN', 'PTS', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'REB', 'REBO', 'REBD', 'AST', 'STL', 'BLK', 'TOV', 'PM', 'EFF', 'VAL'];
+const SK = ['MIN', 'PTS', 'FGM', 'FGA', '3PM', '3PA', 'FTM', 'FTA', 'REB', 'REBO', 'REBD', 'AST', 'STL', 'BLK', 'TOV', 'FAL', 'PM', 'EFF', 'VAL'];
 /** líneas de una temporada (fase: 'Liga' | 'Playoffs' | null = todas) */
 function linesOf(season, opt) {
   opt = opt || {};

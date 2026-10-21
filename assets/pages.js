@@ -327,12 +327,12 @@ PAGES.jugador = R => {
 
 /* ============ ESTADÍSTICAS ============ */
 const STAT_VIEWS = [['medias', 'Medias'], ['p36', 'Por 36 min'], ['avanzadas', 'Tiro y avanzadas'], ['maximos', 'Máximos']];
-const EXPAND = { REB: [['REBD', 'DEF'], ['REBO', 'OFF']], FGp: [['FGM', 'TC met.'], ['FGA', 'TC int.']], TPp: [['3PM', 'T3 met.'], ['3PA', 'T3 int.']], FTp: [['FTM', 'TL met.'], ['FTA', 'TL int.']] };
+const EXPAND = { PTS: [['FGp', 'TC', 'shot'], ['TPp', 'T3', 'shot'], ['FTp', 'TL', 'shot']], REB: [['REBD', 'DEF'], ['REBO', 'OFF']], FGp: [['FGM', 'TC met.'], ['FGA', 'TC int.']], TPp: [['3PM', 'T3 met.'], ['3PA', 'T3 int.']], FTp: [['FTM', 'TL met.'], ['FTA', 'TL int.']] };
 const SHOT_MA = { FGp: ['FGM', 'FGA'], TPp: ['3PM', '3PA'], FTp: ['FTM', 'FTA'] };
 // mínimo de intentos por partido (x mínimo de partidos) para que un porcentaje cuente
 const SHOT_MIN = { FGp: ['FGM', 'FGA', 5], eFG: ['FGM', 'FGA', 5], TS: ['FGM', 'FGA', 5], TPp: ['3PM', '3PA', 3], FTp: ['FTM', 'FTA', 3], ATO: ['', 'ATO', 2], r3: ['', 'FGA', 5], ftr: ['', 'FGA', 5] };
-const NO_BEST = ['r3', 'ftr', 'GP'];
-const EXPAND_KEY = { REB: 'rx', FGp: 'xFG', TPp: 'xTP', FTp: 'xFT' };
+const NO_BEST = ['r3', 'ftr', 'GP', 'FAL'];
+const EXPAND_KEY = { PTS: 'xPTS', REB: 'rx', FGp: 'xFG', TPp: 'xTP', FTp: 'xFT' };
 function statTable(season, view, rx, sortK) {
   const fase = view === 'maximos' ? null : 'Liga';
   const sp = seasonPlayers(season, fase), m = minPJ(season);
@@ -340,13 +340,13 @@ function statTable(season, view, rx, sortK) {
   const shotMax = (a, mk, ak, minA) => { const t = a.lines.filter(l => (l[ak] || 0) >= minA).map(l => ({ l, v: l[mk] / l[ak] })).sort((a, b) => b.v - a.v)[0]; return t || null; };
   let cols;
   const box = view === 'medias' || view === 'p36';
-  if (box) cols = [['PTS', 'PTS'], ['GP', 'PJ', 'int'], ['MIN', 'MIN'], ['FGp', 'TC', 'shot'], ['TPp', 'T3', 'shot'], ['FTp', 'TL', 'shot'], ['REB', 'REB'], ['AST', 'AST'], ['STL', 'ROB'], ['BLK', 'TAP'], ['TOV', 'PÉR', 'low'], ['PM', '+/−'], ['EFF', 'EFF'], ['VAL', 'VAL']];
+  if (box) cols = [['GP', 'PJ', 'int'], ['MIN', 'MIN'], ['PTS', 'PTS'], ['REB', 'REB'], ['AST', 'AST'], ['STL', 'ROB'], ['BLK', 'TAP'], ['TOV', 'PÉR', 'low'], ['FAL', 'FAL'], ['PM', '+/−'], ['EFF', 'EFF'], ['VAL', 'VAL']];
   else if (view === 'avanzadas') cols = [['FGp', 'TC%', 'pct'], ['TPp', 'T3%', 'pct'], ['FTp', 'TL%', 'pct'], ['eFG', 'eFG%', 'pct'], ['TS', 'TS%', 'pct'], ['ATO', 'AST/PÉR'], ['r3', 'Triples / tiros', 'pct'], ['ftr', 'Libres / tiros', 'pct'], ['EFF', 'EFF']];
   else cols = [['PTS', 'PTS'], ['REB', 'REB'], ['AST', 'AST'], ['STL', 'ROB'], ['BLK', 'TAP'], ['3PM', 'T3'], ['FTM', 'TL'], ['MIN', 'MIN'], ['FGp', 'TC%', 'pct'], ['TPp', 'T3%', 'pct'], ['FTp', 'TL%', 'pct'], ['EFF', 'EFF'], ['VAL', 'VAL']];
   // columnas que se despliegan: rebotes en defensivos/ofensivos y cada porcentaje en metidos/intentados
   const ex = Object.assign({ REB: rx }, statTable.ex || {});
-  Object.keys(EXPAND).forEach(g => { if (!ex[g] || (box && g !== 'REB')) return; const i = cols.findIndex(c => c[0] === g); if (i < 0) return;
-    cols[i] = cols[i].slice(0, 3).concat([g, 'first']); const kids = EXPAND[g].map(([k, l], j, a) => [k, l, 'split', g, j === a.length - 1 ? 'last' : 'mid']);
+  Object.keys(EXPAND).forEach(g => { if (!ex[g] || (box ? !['REB', 'PTS'].includes(g) : g === 'PTS')) return; const i = cols.findIndex(c => c[0] === g); if (i < 0) return;
+    cols[i] = cols[i].slice(0, 3).concat([g, 'first']); const kids = EXPAND[g].map(([k, l, f], j, a) => [k, l, f || 'split', g, j === a.length - 1 ? 'last' : 'mid']);
     cols.splice(i + 1, 0, ...kids); });
   const valA = (a, k, team) => {
     if (view === 'maximos') {
@@ -395,13 +395,13 @@ PAGES.estadisticas = R => {
   const view = STAT_VIEWS.some(v => v[0] === R.arg) ? R.arg : 'medias';
   const s = S.season, rx = ui('rx', false);
   const sortK = ui('st.sort.' + view, null);
-  statTable.ex = { FGp: ui('xFG', false), TPp: ui('xTP', false), FTp: ui('xFT', false) };
+  statTable.ex = { PTS: ui('xPTS', false), FGp: ui('xFG', false), TPp: ui('xTP', false), FTp: ui('xFT', false) };
   const T = statTable(s, view, rx, sortK);
   const nL = gamesOf(s, 'Liga').filter(g => g.played).length;
-  const sub = view === 'maximos' ? `Mejor marca en un solo partido · liga y playoffs ${s}` : `${view === 'p36' ? 'Por 36 minutos' : view === 'avanzadas' ? 'Tiro y avanzadas' : 'Media por partido'} · Liga ${s} · ${nL} partidos`;
+  const sub = view === 'maximos' ? `Mejor marca en un solo partido · liga y playoffs ${s}` : `${view === 'p36' ? 'Por 36 minutos' : view === 'avanzadas' ? 'Tiro y avanzadas' : 'Media por partido'} · Liga ${s} · ${nL} partido${nL === 1 ? "" : "s"}`;
   const gcls = c => c[3] ? 'grp g-' + c[4] : '';
   const th = T.cols.map(c => { const [k, l] = c; const xk = EXPAND_KEY[k];
-    if (xk && view !== 'maximos' && c[2] !== 'shot' || k === 'REB') { const open = !!c[3]; const tip = k === 'REB' ? 'ofensivos y defensivos' : 'metidos e intentados';
+    if (k === 'PTS' ? T.box : (xk && view !== 'maximos' && c[2] !== 'shot' || k === 'REB')) { const open = !!c[3]; const tip = k === 'REB' ? 'ofensivos y defensivos' : k === 'PTS' ? 'tiros de campo, triples y libres' : 'metidos e intentados';
       return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button><button class="xbtn ${open ? 'on' : ''}" ${on(xk, !open)} title="${open ? 'Ocultar' : 'Ver'} ${tip}" aria-label="${open ? 'Ocultar' : 'Ver'} ${tip}">${open ? '−' : '+'}</button></th>`; }
     return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button></th>`; }).join('');
   const pjCell = v => T.box ? '' : `<td>${v}</td>`;
@@ -411,7 +411,7 @@ PAGES.estadisticas = R => {
   const dnpRows = dnp.map(p => `<tr class="dnp"><td>${plink(p)}</td><td colspan="${T.cols.length}" class="l">No ha jugado esta temporada</td></tr>`).join('');
   const rows = T.names.map(p => `<tr class="${T.sp[p].gp < T.m ? 'dimrow' : ''}"><td>${plink(p)}</td>${pjCell(T.sp[p].gp)}${T.cols.map(c => { const [k, , f] = c; const x = T.val(p, k) || {}; const ok = T.volOk(T.sp[p], k); return `<td class="${T.sp[p].gp >= T.m && ok && isNum(x.v) && x.v === T.best[k] ? 'best' : ''} ${ok ? '' : 'lowvol'} ${gcls(c)} ${k === 'PTS' && T.box ? 'ptscol' : ''}">${T.cell(T.sp[p], k, f, x)}</td>`; }).join('')}</tr>`).join('');
   const teamNote = { medias: 'Equipo: lo que hace el equipo entero por partido (sus minutos son los del partido; +/−, la diferencia media en el marcador).', p36: 'Equipo: el equipo entero por cada 36 minutos de partido.', avanzadas: 'Equipo: porcentajes y ratios del equipo entero.', maximos: 'Equipo: su mejor partido en cada stat (en TC%, T3% y TL%, con un mínimo de 15, 8 y 6 intentos).' };
-  const notes = { medias: 'Media por partido jugado. TC, T3 y TL: tiros metidos-intentados por partido y, debajo, el porcentaje de la temporada. Con el + de REB se despliegan los defensivos y ofensivos.', p36: 'Por 36 minutos (tiros metidos-intentados también por 36, con el porcentaje debajo). La columna MIN muestra los minutos reales por partido como referencia.', avanzadas: 'Triples / tiros = qué parte de sus tiros de campo son triples. Libres / tiros = tiros libres intentados por cada tiro de campo. Describen cómo juega cada uno, no si es mejor o peor, por eso no se destacan.', maximos: 'Mejor marca de cada jugador en un solo partido. En TC%, T3% y TL% cuentan partidos con un mínimo de intentos (4, 3 y 2).' };
+  const notes = { medias: 'Media por partido jugado. Con el + de PTS se despliegan los tiros (TC, T3 y TL: metidos-intentados por partido y, debajo, el porcentaje de la temporada) y con el + de REB, los defensivos y ofensivos. FAL = faltas personales (desde la 26/27).', p36: 'Por 36 minutos (tiros metidos-intentados también por 36, con el porcentaje debajo). La columna MIN muestra los minutos reales por partido como referencia.', avanzadas: 'Triples / tiros = qué parte de sus tiros de campo son triples. Libres / tiros = tiros libres intentados por cada tiro de campo. Describen cómo juega cada uno, no si es mejor o peor, por eso no se destacan.', maximos: 'Mejor marca de cada jugador en un solo partido. En TC%, T3% y TL% cuentan partidos con un mínimo de intentos (4, 3 y 2).' };
   let extra = '';
   if (view === 'maximos') {
     const wcols = T.cols.filter(c => c[2] !== 'split');
