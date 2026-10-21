@@ -198,3 +198,8 @@ table.t th .xbtn.on{background:var(--acc);color:var(--ink);border-color:var(--ac
 table.t tr.teamrow td{border-top:2px solid var(--acc);font-weight:700;color:var(--acc2);background:var(--card2)}
 table.t tr.teamrow td.grp{background:#2B2310}
 table.t td.lowvol{color:var(--mut)}
+/* Estadísticas tipo box score */
+table.t td.ptscol{font-weight:800;font-size:17px;color:var(--tx)}
+table.t td.ptscol.best{color:var(--acc)}
+table.t tr.dnp td{color:var(--dim);font-style:italic}
+table.t tr.dnp td:first-child{font-style:normal}
