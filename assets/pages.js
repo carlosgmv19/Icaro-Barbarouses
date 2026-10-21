@@ -328,6 +328,10 @@ PAGES.jugador = R => {
 /* ============ ESTADÍSTICAS ============ */
 const STAT_VIEWS = [['medias', 'Medias'], ['p36', 'Por 36 min'], ['avanzadas', 'Tiro y avanzadas'], ['maximos', 'Máximos']];
 const EXPAND = { REB: [['REBD', 'DEF'], ['REBO', 'OFF']], FGp: [['FGM', 'TC met.'], ['FGA', 'TC int.']], TPp: [['3PM', 'T3 met.'], ['3PA', 'T3 int.']], FTp: [['FTM', 'TL met.'], ['FTA', 'TL int.']] };
+const SHOT_MA = { FGp: ['FGM', 'FGA'], TPp: ['3PM', '3PA'], FTp: ['FTM', 'FTA'] };
+// mínimo de intentos por partido (x mínimo de partidos) para que un porcentaje cuente
+const SHOT_MIN = { FGp: ['FGM', 'FGA', 5], eFG: ['FGM', 'FGA', 5], TS: ['FGM', 'FGA', 5], TPp: ['3PM', '3PA', 3], FTp: ['FTM', 'FTA', 3], ATO: ['', 'ATO', 2], r3: ['', 'FGA', 5], ftr: ['', 'FGA', 5] };
+const NO_BEST = ['r3', 'ftr'];
 const EXPAND_KEY = { REB: 'rx', FGp: 'xFG', TPp: 'xTP', FTp: 'xFT' };
 function statTable(season, view, rx, sortK) {
   const fase = view === 'maximos' ? null : 'Liga';
@@ -336,7 +340,7 @@ function statTable(season, view, rx, sortK) {
   const shotMax = (a, mk, ak, minA) => { const t = a.lines.filter(l => (l[ak] || 0) >= minA).map(l => ({ l, v: l[mk] / l[ak] })).sort((a, b) => b.v - a.v)[0]; return t || null; };
   let cols;
   if (view === 'medias' || view === 'p36') cols = [['MIN', 'MIN'], ['PTS', 'PTS'], ['REB', 'REB'], ['AST', 'AST'], ['STL', 'ROB'], ['BLK', 'TAP'], ['TOV', 'PÉR', 'low'], ['PM', '+/−'], ['FGp', 'TC%', 'pct'], ['TPp', 'T3%', 'pct'], ['FTp', 'TL%', 'pct'], ['EFF', 'EFF'], ['VAL', 'VAL']];
-  else if (view === 'avanzadas') cols = [['FGp', 'TC%', 'pct'], ['TPp', 'T3%', 'pct'], ['FTp', 'TL%', 'pct'], ['eFG', 'eFG%', 'pct'], ['TS', 'TS%', 'pct'], ['ATO', 'AST/PÉR'], ['r3', '% triples', 'pct'], ['ftr', '% libres', 'pct'], ['EFF', 'EFF']];
+  else if (view === 'avanzadas') cols = [['FGp', 'TC%', 'pct'], ['TPp', 'T3%', 'pct'], ['FTp', 'TL%', 'pct'], ['eFG', 'eFG%', 'pct'], ['TS', 'TS%', 'pct'], ['ATO', 'AST/PÉR'], ['r3', 'Triples / tiros', 'pct'], ['ftr', 'Libres / tiros', 'pct'], ['EFF', 'EFF']];
   else cols = [['PTS', 'PTS'], ['REB', 'REB'], ['AST', 'AST'], ['STL', 'ROB'], ['BLK', 'TAP'], ['3PM', 'T3'], ['FTM', 'TL'], ['MIN', 'MIN'], ['FGp', 'TC%', 'pct'], ['TPp', 'T3%', 'pct'], ['FTp', 'TL%', 'pct'], ['EFF', 'EFF'], ['VAL', 'VAL']];
   // columnas que se despliegan: rebotes en defensivos/ofensivos y cada porcentaje en metidos/intentados
   const ex = Object.assign({ REB: rx }, statTable.ex || {});
@@ -365,11 +369,19 @@ function statTable(season, view, rx, sortK) {
   const teamVal = k => valA(team, k, true);
   const names = Object.keys(sp);
   const qual = names.filter(p => sp[p].gp >= m);
-  const best = {}; cols.forEach(([k, , f]) => { const vs = qual.map(p => (val(p, k) || {}).v).filter(isNum); best[k] = vs.length ? (f === 'low' ? Math.min(...vs) : Math.max(...vs)) : null; });
-  const sk = sortK || cols[1] && cols[1][0];
-  names.sort((a, b) => ((sp[b].gp >= m) - (sp[a].gp >= m)) || (((val(b, sk) || {}).v ?? -1e9) - ((val(a, sk) || {}).v ?? -1e9)) * ((cols.find(c => c[0] === sk) || [])[2] === 'low' ? -1 : 1));
+  // porcentajes: solo cuentan (para destacar y para ordenar arriba) con un mínimo de intentos por partido
+  const volOk = (a, k) => { if (view === 'maximos') return true; const r = SHOT_MIN[k]; if (!r) return true; const t = a.tot;
+    return (r[1] === 'ATO' ? (t.AST || 0) + (t.TOV || 0) : (t[r[1]] || 0)) >= r[2] * m; };
+  const best = {}; cols.forEach(([k, , f]) => { if (NO_BEST.includes(k)) { best[k] = null; return; }
+    const vs = qual.filter(p => volOk(sp[p], k)).map(p => (val(p, k) || {}).v).filter(isNum); best[k] = vs.length ? (f === 'low' ? Math.min(...vs) : Math.max(...vs)) : null; });
+  const defSort = { medias: 'PTS', p36: 'PTS', avanzadas: 'eFG', maximos: 'PTS' }[view];
+  const sk = sortK && cols.some(c => c[0] === sortK) ? sortK : defSort;
+  names.sort((a, b) => ((sp[b].gp >= m) - (sp[a].gp >= m)) || (volOk(sp[b], sk) - volOk(sp[a], sk)) || (((val(b, sk) || {}).v ?? -1e9) - ((val(a, sk) || {}).v ?? -1e9)) * ((cols.find(c => c[0] === sk) || [])[2] === 'low' ? -1 : 1));
   const fmt = (k, v, f) => f === 'pct' ? pc(v) : k === 'PM' ? sg(v) : view === 'maximos' ? nf(v) : n1(v);
-  return { sp, names, cols, val, best, m, fmt, sk, team, teamVal };
+  // debajo de TC%, T3% y TL%: metidos/intentados (de la temporada; en Máximos, de ese partido)
+  const sub = (a, k, x) => { const r = SHOT_MA[k]; if (!r) return ''; const src = view === 'maximos' ? (x && x.l) : a.tot; if (!src) return '';
+    const mm = src[r[0]], aa = src[r[1]]; return aa ? `<div class="small mut" style="font-weight:400">${nf(mm || 0)}/${nf(aa)}</div>` : ''; };
+  return { sp, names, cols, val, best, m, fmt, sk, team, teamVal, volOk, sub };
 }
 PAGES.estadisticas = R => {
   const view = STAT_VIEWS.some(v => v[0] === R.arg) ? R.arg : 'medias';
@@ -384,10 +396,10 @@ PAGES.estadisticas = R => {
     if (xk && view !== 'maximos' || k === 'REB') { const open = !!c[3]; const tip = k === 'REB' ? 'ofensivos y defensivos' : 'metidos e intentados';
       return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button><button class="xbtn ${open ? 'on' : ''}" ${on(xk, !open)} title="${open ? 'Ocultar' : 'Ver'} ${tip}" aria-label="${open ? 'Ocultar' : 'Ver'} ${tip}">${open ? '−' : '+'}</button></th>`; }
     return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button></th>`; }).join('');
-  const teamRow = T.team.gp ? `<tr class="teamrow"><td>Equipo</td><td>${T.team.gp}</td>${T.cols.map(c => { const [k, , f] = c; const x = T.teamVal(k) || {}; return `<td class="${gcls(c)}">${T.fmt(k, x.v, f)}</td>`; }).join('')}</tr>` : '';
-  const rows = T.names.map(p => `<tr class="${T.sp[p].gp < T.m ? 'dimrow' : ''}"><td>${plink(p)}</td><td>${T.sp[p].gp}</td>${T.cols.map(c => { const [k, , f] = c; const x = T.val(p, k) || {}; return `<td class="${T.sp[p].gp >= T.m && isNum(x.v) && x.v === T.best[k] ? 'best' : ''} ${gcls(c)}">${T.fmt(k, x.v, f)}</td>`; }).join('')}</tr>`).join('');
+  const teamRow = T.team.gp ? `<tr class="teamrow"><td>Equipo</td><td>${T.team.gp}</td>${T.cols.map(c => { const [k, , f] = c; const x = T.teamVal(k) || {}; return `<td class="${gcls(c)}">${T.fmt(k, x.v, f)}${T.sub(T.team, k, x)}</td>`; }).join('')}</tr>` : '';
+  const rows = T.names.map(p => `<tr class="${T.sp[p].gp < T.m ? 'dimrow' : ''}"><td>${plink(p)}</td><td>${T.sp[p].gp}</td>${T.cols.map(c => { const [k, , f] = c; const x = T.val(p, k) || {}; const ok = T.volOk(T.sp[p], k); return `<td class="${T.sp[p].gp >= T.m && ok && isNum(x.v) && x.v === T.best[k] ? 'best' : ''} ${ok ? '' : 'lowvol'} ${gcls(c)}">${T.fmt(k, x.v, f)}${T.sub(T.sp[p], k, x)}</td>`; }).join('')}</tr>`).join('');
   const teamNote = { medias: 'Equipo: lo que hace el equipo entero por partido (sus minutos son los del partido; +/−, la diferencia media en el marcador).', p36: 'Equipo: el equipo entero por cada 36 minutos de partido.', avanzadas: 'Equipo: porcentajes y ratios del equipo entero.', maximos: 'Equipo: su mejor partido en cada stat (en TC%, T3% y TL%, con un mínimo de 15, 8 y 6 intentos).' };
-  const notes = { medias: 'Media por partido jugado. TC%, T3% y TL% son los porcentajes de toda la temporada; con el botón + al lado se despliegan los tiros metidos e intentados (y en REB, los defensivos y ofensivos).', p36: 'Por 36 minutos. La columna MIN muestra los minutos reales por partido como referencia.', avanzadas: '% triples = qué parte de sus tiros son triples. % libres = tiros libres intentados por cada tiro de campo.', maximos: 'Mejor marca de cada jugador en un solo partido. En TC%, T3% y TL% cuentan partidos con un mínimo de intentos (4, 3 y 2).' };
+  const notes = { medias: 'Media por partido jugado. TC%, T3% y TL% son los porcentajes de toda la temporada; con el botón + al lado se despliegan los tiros metidos e intentados (y en REB, los defensivos y ofensivos).', p36: 'Por 36 minutos. La columna MIN muestra los minutos reales por partido como referencia.', avanzadas: 'Triples / tiros = qué parte de sus tiros de campo son triples. Libres / tiros = tiros libres intentados por cada tiro de campo. Describen cómo juega cada uno, no si es mejor o peor, por eso no se destacan.', maximos: 'Mejor marca de cada jugador en un solo partido. En TC%, T3% y TL% cuentan partidos con un mínimo de intentos (4, 3 y 2).' };
   let extra = '';
   if (view === 'maximos') {
     const wcols = T.cols.filter(c => c[2] !== 'split');
@@ -402,7 +414,7 @@ PAGES.estadisticas = R => {
   return `<div class="pagehead"><div><h1>Estadísticas</h1><div class="sub">${sub}</div></div>
     <div class="pills">${STAT_VIEWS.map(([k, l]) => `<button type="button" class="${view === k ? 'on' : ''}" onclick="go('estadisticas/${k}')">${l}</button>`).join('')}</div></div>
   <section class="sec">${T.names.length ? `<div class="tw"><table class="t sticky1"><tr><th>Jugador</th><th>PJ</th>${th}</tr>${rows}${teamRow}</table></div>
-    <div class="note" style="margin-top:10px">${notes[view]} ${teamNote[view]} Atenuados: menos de ${T.m} partidos. Pulsa una columna para ordenar.</div>` : '<div class="empty">Aún no hay partidos jugados en esta temporada.</div>'}</section>
+    <div class="note" style="margin-top:10px">${notes[view]} ${teamNote[view]} ${T.m > 1 ? `Filas atenuadas: menos de ${T.m} partidos. ` : ''}${view !== 'maximos' ? `Porcentajes atenuados: pocos intentos (menos de ${5 * T.m} tiros de campo, ${3 * T.m} triples o ${3 * T.m} libres en la temporada); ni se destacan ni se ordenan arriba. ` : ''}Pulsa una columna para ordenar.</div>` : '<div class="empty">Aún no hay partidos jugados en esta temporada.</div>'}</section>
   ${extra}
   ${recs ? `<section class="sec"><div class="between" style="margin-bottom:14px"><h2>Récords de un partido</h2><span class="note">Mejores marcas individuales de la temporada, playoffs incluidos</span></div><div class="grid g4" style="gap:12px">${recs}</div></section>` : ''}
   <section class="sec grid g4" style="gap:14px">

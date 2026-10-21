@@ -197,3 +197,4 @@ table.t th .xbtn.on{background:var(--acc);color:var(--ink);border-color:var(--ac
 /* fila del equipo al final de Estadísticas */
 table.t tr.teamrow td{border-top:2px solid var(--acc);font-weight:700;color:var(--acc2);background:var(--card2)}
 table.t tr.teamrow td.grp{background:#2B2310}
+table.t td.lowvol{color:var(--mut)}
