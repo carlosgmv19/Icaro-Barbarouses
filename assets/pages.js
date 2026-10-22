@@ -402,7 +402,7 @@ PAGES.estadisticas = R => {
   const gcls = c => c[3] ? 'grp g-' + c[4] : '';
   const th = T.cols.map(c => { const [k, l] = c; const xk = EXPAND_KEY[k];
     if (k === 'PTS' ? T.box : (xk && view !== 'maximos' && c[2] !== 'shot' || k === 'REB')) { const open = !!c[3]; const tip = k === 'REB' ? 'ofensivos y defensivos' : k === 'PTS' ? 'tiros de campo, triples y libres' : 'metidos e intentados';
-      return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button><button class="xbtn ${open ? 'on' : ''}" ${on(xk, !open)} title="${open ? 'Ocultar' : 'Ver'} ${tip}" aria-label="${open ? 'Ocultar' : 'Ver'} ${tip}">${open ? '−' : '+'}</button></th>`; }
+      return `<th class="xth ${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? '↓' : ''}</button><button class="xbtn ${open ? 'on' : ''}" ${on(xk, !open)} title="${open ? 'Ocultar' : 'Ver'} ${tip}" aria-label="${open ? 'Ocultar' : 'Ver'} ${tip}">${open ? '−' : '+'}</button></th>`; }
     return `<th class="${T.sk === k ? 'sorted' : ''} ${gcls(c)}"><button ${on('st.sort.' + view, k)}>${l}${T.sk === k ? ' ↓' : ''}</button></th>`; }).join('');
   const pjCell = v => T.box ? '' : `<td>${v}</td>`;
   const teamRow = T.team.gp ? `<tr class="teamrow"><td>Equipo</td>${pjCell(T.team.gp)}${T.cols.map(c => { const [k, , f] = c; const x = T.teamVal(k) || {}; return `<td class="${gcls(c)}">${T.cell(T.team, k, f, x)}</td>`; }).join('')}</tr>` : '';
@@ -425,7 +425,7 @@ PAGES.estadisticas = R => {
   const recs = RK.map(([k, l]) => { const t = sl.filter(x => x[k] != null).sort((a, b) => b[k] - a[k])[0]; return t && t[k] ? `<a href="#/partido/${encodeURIComponent(t.gid)}" class="card sm" style="color:var(--tx)"><div class="lbl">${l}</div><div class="big acc" style="font-size:40px">${nf(t[k])}</div><div style="font-weight:700">${esc(t.p)}</div><div class="small mut">vs ${esc(t.g.rival)} · ${fd(t.g.date)}</div></a>` : ''; }).join('');
   return `<div class="pagehead"><div><h1>Estadísticas</h1><div class="sub">${sub}</div></div>
     <div class="pills">${STAT_VIEWS.map(([k, l]) => `<button type="button" class="${view === k ? 'on' : ''}" onclick="go('estadisticas/${k}')">${l}</button>`).join('')}</div></div>
-  <section class="sec">${T.names.length ? `<div class="tw"><table class="t sticky1"><tr><th>Jugador</th>${T.box ? '' : '<th>PJ</th>'}${th}</tr>${rows}${dnpRows}${teamRow}</table></div>
+  <section class="sec">${T.names.length ? `<div class="tw"><table class="t sticky1 eqcols" style="--ncol:${T.cols.length + (T.box ? 0 : 1)}"><tr><th>Jugador</th>${T.box ? '' : '<th>PJ</th>'}${th}</tr>${rows}${dnpRows}${teamRow}</table></div>
     <div class="note" style="margin-top:10px">${notes[view]} ${teamNote[view]} ${T.m > 1 ? `Filas atenuadas: menos de ${T.m} partidos. ` : ''}${view !== 'maximos' ? `Porcentajes atenuados: pocos intentos (menos de ${5 * T.m} tiros de campo, ${3 * T.m} triples o ${3 * T.m} libres en la temporada); ni se destacan ni se ordenan arriba. ` : ''}Pulsa una columna para ordenar.</div>` : '<div class="empty">Aún no hay partidos jugados en esta temporada.</div>'}</section>
   ${extra}
   ${recs ? `<section class="sec"><div class="between" style="margin-bottom:14px"><h2>Récords de un partido</h2><span class="note">Mejores marcas individuales de la temporada, playoffs incluidos</span></div><div class="grid g4" style="gap:12px">${recs}</div></section>` : ''}

@@ -191,7 +191,9 @@ table.t td.strong{font-weight:700;color:var(--tx)}
 .ins-c{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
 .ins-c.ok{color:#4ade80;border-color:rgba(74,222,128,.4)}.ins-c.mid{color:var(--acc);border-color:var(--accline)}.ins-c.low{color:var(--mut)}
 /* botón de desplegar columnas: separado del de ordenar y con su propia caja */
-table.t th .xbtn{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:10px;width:24px;height:22px;border:1px solid var(--accline);border-radius:6px;background:var(--accbg2);color:var(--acc);font:700 15px/1 Barlow;cursor:pointer;padding:0}
+table.t th .xbtn{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;margin-left:5px;width:18px;height:18px;border:1px solid var(--accline);border-radius:5px;background:var(--accbg2);color:var(--acc);font:700 13px/1 Barlow;cursor:pointer;padding:0}
+/* las columnas con desplegable no son más anchas que el resto: título y botón juntos y sin hueco extra */
+table.t th.xth{white-space:nowrap;padding-left:4px;padding-right:8px}
 table.t th .xbtn:hover{background:var(--acc);color:var(--ink);border-color:var(--acc)}
 table.t th .xbtn.on{background:var(--acc);color:var(--ink);border-color:var(--acc)}
 /* fila del equipo al final de Estadísticas */
@@ -203,3 +205,6 @@ table.t td.ptscol{font-weight:800;font-size:17px;color:var(--tx)}
 table.t td.ptscol.best{color:var(--acc)}
 table.t tr.dnp td{color:var(--dim);font-style:italic}
 table.t tr.dnp td:first-child{font-style:normal}
+
+/* Estadísticas: todas las columnas de números igual de anchas (también PTS y REB, que llevan el botón +) */
+table.t.eqcols th:not(:first-child){width:calc(82% / var(--ncol))}
