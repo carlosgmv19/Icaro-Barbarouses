@@ -7,7 +7,7 @@ const GSTATS = [['PTS', 'Puntos'], ['REB', 'Rebotes'], ['AST', 'Asistencias'], [
 const GSTATS_X = GSTATS.concat([['TS', 'TS%'], ['FGp', '% tiro'], ['p36PTS', 'Puntos/36'], ['p36REB', 'Rebotes/36']]);
 function gval(a, k) { if (k === 'TS' || k === 'FGp') return isNum(a[k]) ? a[k] * 100 : null; if (k.startsWith('p36')) return a.p36[k.slice(3)]; return a.avg[k]; }
 PAGES.graficas = () => {
-  const s = S.season, sp = seasonPlayers(s, 'Liga'), games = gamesOf(s).filter(g => g.played);
+  const s = S.season, sp = seasonPlayers(s, 'Liga'), games = gamesOf(s).filter(g => g.real);
   const names = Object.keys(sp).sort((a, b) => sp[b].gp - sp[a].gp || a.localeCompare(b));
   let sel = ui('gr.sel', null);
   if (!sel || !sel.every(p => sp[p])) { sel = names.slice().sort((a, b) => (sp[b].tot.MIN || 0) - (sp[a].tot.MIN || 0)).slice(0, 3); UI['gr.sel'] = sel; }
@@ -275,7 +275,7 @@ PAGES.asistencia = () => {
   const by = g ? convOf(g) : {};
   const roster = Object.values(S.M.players).filter(p => p.activo).map(p => p.name);
   // temporada partido a partido
-  const s = S.season, gs = gamesOf(s).filter(x => x.played || x.estado === 'No disputado');
+  const s = S.season, gs = gamesOf(s).filter(x => (x.played && !x.forfeit) || x.estado === 'No disputado');
   const ps = uniq(gs.flatMap(x => (S.M.linesByGame[x.id] || []).map(l => l.p)));
   const cnt = p => gs.filter(x => (S.M.linesByGame[x.id] || []).some(l => l.p === p)).length;
   ps.sort((a, b) => cnt(b) - cnt(a));

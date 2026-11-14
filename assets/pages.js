@@ -6,7 +6,7 @@ const on = (k, v) => `onclick="setUI(${esc(JSON.stringify(k))},${esc(JSON.string
 const pills = (k, list, cur) => `<div class="pills">${list.map(([v, l]) => `<button type="button" class="${cur === v ? 'on' : ''}" ${on(k, v)}>${l}</button>`).join('')}</div>`;
 const resChip = g => `<span class="res ${g && g.res ? g.res : 'N'}">${g && g.res ? g.res : '–'}</span>`;
 const sc = g => g && g.played ? g.pf + '–' + g.pc : '—';
-const minPJ = season => { const n = gamesOf(season, 'Liga').filter(g => g.played).length; return Math.max(1, Math.min(MINPJ, Math.ceil(n * 0.25))); };
+const minPJ = season => { const n = gamesOf(season, 'Liga').filter(g => g.real).length; return Math.max(1, Math.min(MINPJ, Math.ceil(n * 0.25))); };
 function photo(p, h, numSize) {
   const pl = S.M.players[p] || {};
   return `<div class="ph" style="height:${h}px">${pl.dorsal ? `<div class="num" style="font-size:${numSize}px">#${esc(pl.dorsal)}</div>` : ''}${SIL(Math.round(h * 0.65), Math.round(h * 0.85))}${pl.foto ? `<img class="foto" src="${esc(pl.foto)}" alt="${esc(p)}" loading="lazy" onerror="this.remove()">` : ''}</div>`;
@@ -250,7 +250,7 @@ PAGES.jugador = R => {
     <h1 style="font-size:clamp(64px,9vw,120px);line-height:.85">${esc(p.toUpperCase())}</h1><div class="tx2">Todavía no ha jugado partidos con nosotros. Sus estadísticas y su rol aparecerán en cuanto juegue.</div>${P.bio ? `<div class="tx2">${esc(P.bio)}</div>` : ''}</div></section>`;
   const { sp, q } = qualAvg(s);
   const A = sp[p], all = linesOf(s, { p }).sort((x, y) => x.g.date.localeCompare(y.g.date));
-  const nLg = gamesOf(s, 'Liga').filter(g => g.played).length;
+  const nLg = gamesOf(s, 'Liga').filter(g => g.real).length;
   const qq = q.includes(p) ? q : q.concat(p);
   const tile = (k, l) => { const r = rankIn(sp, qq, p, o => o.avg[k]); return `<div class="card sm"><div class="lbl">${l}</div><div class="big ${r === 1 ? 'acc' : ''}">${n1(A.avg[k])}</div><div class="small mut">${r}º del equipo</div></div>`; };
   const ev = roleEvolution(p, s);
@@ -397,7 +397,7 @@ PAGES.estadisticas = R => {
   const sortK = ui('st.sort.' + view, null);
   statTable.ex = { PTS: ui('xPTS', false), FGp: ui('xFG', false), TPp: ui('xTP', false), FTp: ui('xFT', false) };
   const T = statTable(s, view, rx, sortK);
-  const nL = gamesOf(s, 'Liga').filter(g => g.played).length;
+  const nL = gamesOf(s, 'Liga').filter(g => g.real).length;
   const sub = view === 'maximos' ? `Mejor marca en un solo partido · liga y playoffs ${s}` : `${view === 'p36' ? 'Por 36 minutos' : view === 'avanzadas' ? 'Tiro y avanzadas' : 'Media por partido'} · Liga ${s} · ${nL} partido${nL === 1 ? "" : "s"}`;
   const gcls = c => c[3] ? 'grp g-' + c[4] : '';
   const th = T.cols.map(c => { const [k, l] = c; const xk = EXPAND_KEY[k];

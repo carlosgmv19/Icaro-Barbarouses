@@ -94,6 +94,8 @@ function setData(d) {
     g.res = g.played ? (g.pf > g.pc ? 'V' : 'D') : null;
     // 20–0 o 0–20: un equipo no se presentó (no cuenta para los récords de equipo)
     g.forfeit = g.played && ((g.pf === 20 && g.pc === 0) || (g.pf === 0 && g.pc === 20));
+    // partido con estadísticas: jugado de verdad (un 20–0 por incomparecencia cuenta como victoria, pero no como partido jugado)
+    g.real = g.played && !g.forfeit;
     g.po = g.fase === 'Playoffs';
     g.label = g.po ? 'PO' + (g.j || '') : 'J' + (g.j || '');
     return g;
@@ -176,9 +178,9 @@ const MINPJ = 5;
 function gamesOf(season, fase) { return S.M.games.filter(g => g.season === season && (!fase || g.fase === fase)); }
 function teamRecord(season) {
   const L = gamesOf(season, 'Liga').filter(g => g.played), P = gamesOf(season, 'Playoffs').filter(g => g.played);
-  const all = L.concat(P);
+  const all = L.concat(P), R = L.filter(g => g.real);   // medias y partidos jugados: sin los 20–0 por incomparecencia
   return { V: L.filter(g => g.res === 'V').length, D: L.filter(g => g.res === 'D').length, poV: P.filter(g => g.res === 'V').length, poD: P.filter(g => g.res === 'D').length,
-    pf: L.length ? sum(L, g => g.pf) / L.length : null, pc: L.length ? sum(L, g => g.pc) / L.length : null, n: L.length, all };
+    pf: R.length ? sum(R, g => g.pf) / R.length : null, pc: R.length ? sum(R, g => g.pc) / R.length : null, n: R.length, nForfeit: L.length - R.length, all };
 }
 function bestStreak(games) {
   let best = 0, cur = 0, from = null, bf = null, bt = null;
@@ -202,7 +204,7 @@ function roleOf(p) {
 }
 /** evolución del rol tras las jornadas 5, 10, 15… de una temporada */
 function roleEvolution(p, season) {
-  const lg = gamesOf(season, 'Liga').filter(g => g.played);
+  const lg = gamesOf(season, 'Liga').filter(g => g.real);
   const out = [];
   for (let k = 5; k <= lg.length; k += 5) {
     const ids = new Set(lg.slice(0, k).map(g => g.id));
